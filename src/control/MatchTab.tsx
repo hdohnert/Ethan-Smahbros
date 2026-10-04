@@ -339,7 +339,7 @@ function PlayoffCard({ live }: { live: Live }) {
   return (
     <section className="card stack">
       <h2 className="card__title">Top-4 Playoff · best of 3</h2>
-      {s && s.a && s.b && (
+      {s && s.a && s.b && get(s.a) && get(s.b) && (
         <>
           <div className="muted">{SERIES_NAME[s.id]} · tap the winner of this game</div>
           <div className="match">

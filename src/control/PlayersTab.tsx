@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { addPlayer, AVATAR_COLORS, deletePlayer, updatePlayer, uploadPhoto } from '../data/api';
+import { addPlayers, AVATAR_COLORS, deletePlayer, updatePlayer, uploadPhoto } from '../data/api';
 import type { Player } from '../data/types';
 import type { Live } from '../data/useSnapshot';
 import { Avatar } from '../ui/Avatar';
@@ -13,26 +13,52 @@ export function PlayersTab({ live }: { live: Live }) {
   const snap = live.snap!;
   const { busy, run } = useAction();
   const [name, setName] = useState('');
+  const [many, setMany] = useState('');
   const [editing, setEditing] = useState<Player | null>(null);
   const players = snap.players;
   const isDemo = Boolean(snap.tournament?.is_demo);
 
-  const add = () => {
-    const n = name.trim();
-    if (!n) return;
-    setName('');
-    void run(
-      () =>
-        addPlayer({
-          name: n,
-          emoji: null,
-          color: AVATAR_COLORS[players.length % AVATAR_COLORS.length],
-          sort_order: players.reduce((m, p) => Math.max(m, p.sort_order), 0) + 1,
-          is_demo: isDemo,
-        }).then(live.refresh),
-      `Added ${n}`,
-    );
+  // Names already on the list (case-insensitive) are skipped, so pasting twice is harmless.
+  const addNames = (raw: string[]) => {
+    const taken = new Set(players.map((p) => p.name.trim().toLowerCase()));
+    const names: string[] = [];
+    for (const r of raw) {
+      const n = r.trim().slice(0, 40);
+      if (n && !taken.has(n.toLowerCase())) {
+        taken.add(n.toLowerCase());
+        names.push(n);
+      }
+    }
+    if (!names.length) return Promise.resolve(0);
+    return addPlayers(names, players).then(() => live.refresh()).then(() => names.length);
   };
+
+  if (isDemo) {
+    return (
+      <div className="stack">
+        <section className="card stack">
+          <h2 className="card__title">🎪 Demo mode is on</h2>
+          <p>
+            These are the 20 pretend kids. Your real players are safe and come back when you tap <b>Exit demo</b> on the Match
+            tab. Add your real kids after exiting the demo.
+          </p>
+        </section>
+        <section className="card">
+          <h2 className="card__title">Demo players</h2>
+          <ul className="plist">
+            {players.map((p) => (
+              <li key={p.id} className="plist__row">
+                <span className="plist__who">
+                  <Avatar player={p} />
+                  <span className="plist__name">{p.name}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="stack">
@@ -42,7 +68,9 @@ export function PlayersTab({ live }: { live: Live }) {
           className="row"
           onSubmit={(e) => {
             e.preventDefault();
-            add();
+            const n = name.trim();
+            setName('');
+            void run(() => addNames([n]), (k) => (k ? `Added ${n}` : `${n} is already on the list`));
           }}
         >
           <input className="grow" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} maxLength={40} />
@@ -50,6 +78,31 @@ export function PlayersTab({ live }: { live: Live }) {
             Add
           </button>
         </form>
+        <details className="many">
+          <summary>Add several at once</summary>
+          <textarea
+            className="many__box"
+            rows={8}
+            placeholder={'One name per line, e.g.\nMaya\nLeo\nAva'}
+            value={many}
+            onChange={(e) => setMany(e.target.value)}
+          />
+          <button
+            className="btn btn--go"
+            disabled={busy || !many.trim()}
+            onClick={() =>
+              run(
+                () => addNames(many.split(/[\n,]+/)).then((k) => {
+                  setMany('');
+                  return k;
+                }),
+                (k) => (k ? `Added ${k} ${k === 1 ? 'player' : 'players'}` : 'Those names are already on the list'),
+              )
+            }
+          >
+            Add all
+          </button>
+        </details>
         <p className="muted small">Add all the kids, even ones who skip the tournament, so they get a Ticket Bank account.</p>
       </section>
 
@@ -127,10 +180,13 @@ function EditPlayer({ player, live, onClose }: { player: Player; live: Live; onC
             await deletePlayer(player.id);
             await live.refresh();
             onClose();
-          })
+          }, `${player.name} removed`)
         }
       >
-        <p className="small">Only works for players with no results or tickets. Otherwise switch them off instead.</p>
+        <p className="small">
+          This deletes {player.name} for good, including their tickets and any matches they played. To just take them out of
+          line for a while, switch them off on the Players list instead.
+        </p>
       </Confirm>
     );
   }

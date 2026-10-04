@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { awardEveryone, awardTickets, saveSettings, setStationPin, undoTicket } from '../data/api';
+import { awardEveryone, awardTickets, resetTicketBank, saveSettings, setStationPin, undoTicket } from '../data/api';
 import { Confirm } from '../ui/Confirm';
 import type { Prize } from '../data/types';
 import type { Live } from '../data/useSnapshot';
@@ -111,6 +111,8 @@ export function TicketsTab({ live }: { live: Live }) {
         </ul>
         <p className="muted small">Tournament tickets are undone together with their match by the big Undo button.</p>
       </section>
+
+      <ResetBankCard live={live} />
     </div>
   );
 }
@@ -209,6 +211,33 @@ function EveryoneCard({ live }: { live: Live }) {
           }}
         >
           <p className="muted small">Each award shows under Recent tickets and can be undone one by one.</p>
+        </Confirm>
+      )}
+    </section>
+  );
+}
+
+/** Start the Ticket Bank over at 0 for everyone (for clearing out test tickets). */
+function ResetBankCard({ live }: { live: Live }) {
+  const [ask, setAsk] = useState(false);
+  const { busy, run } = useAction();
+  return (
+    <section className="card stack">
+      <button className="btn btn--ghost btn--danger-text" disabled={busy} onClick={() => setAsk(true)}>
+        Reset Ticket Bank (everyone to 0)…
+      </button>
+      {ask && (
+        <Confirm
+          title="Reset everyone's tickets to 0?"
+          confirmLabel="Reset tickets"
+          danger
+          onCancel={() => setAsk(false)}
+          onConfirm={() => {
+            setAsk(false);
+            void run(() => resetTicketBank(live.snap!).then(live.refresh), 'Ticket Bank reset: everyone has 0');
+          }}
+        >
+          <p className="small">Good for clearing out test tickets before the party. Players and match scores stay.</p>
         </Confirm>
       )}
     </section>

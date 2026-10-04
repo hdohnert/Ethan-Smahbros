@@ -37,7 +37,6 @@ async function withRetry<T = unknown>(
 
 function friendly(e: { message: string; code?: string } | null): string {
   if (!e) return 'Something went wrong';
-  if (e.code === '23503') return 'That player has results or tickets. Set them inactive instead.';
   if (e.code === '42501' || /row-level security|not allowed/i.test(e.message)) return 'Not allowed. Are you signed in as the owner?';
   return e.message;
 }
@@ -154,16 +153,41 @@ export async function saveSettings(snap: Snapshot, patch: Partial<Settings>) {
 
 // ------------------------------------------------------------ players
 
-export async function addPlayer(p: Pick<Player, 'name' | 'emoji' | 'color'> & { sort_order: number; is_demo?: boolean }) {
-  return withRetry<Player>(() => supabase.from('players').insert(p).select().single());
+/** Adds many real (non-demo) players at once, in the order given. */
+export async function addPlayers(names: string[], existing: Player[]) {
+  const start = existing.reduce((m, p) => Math.max(m, p.sort_order), 0) + 1;
+  const rows = names.map((name, i) => ({
+    name,
+    emoji: null,
+    color: AVATAR_COLORS[(existing.length + i) % AVATAR_COLORS.length],
+    sort_order: start + i,
+    is_demo: false,
+  }));
+  if (rows.length) await withRetry(() => supabase.from('players').insert(rows));
 }
 
 export async function updatePlayer(id: string, patch: Partial<Player> & { photo_path?: string | null }) {
   await withRetry(() => supabase.from('players').update(patch).eq('id', id));
 }
 
+/**
+ * Removes a player for good: their tickets, the matches they played (and the
+ * tickets those matches paid), then the player. Order matters because tickets
+ * and matches point at players.
+ */
 export async function deletePlayer(id: string) {
+  await withRetry(() => supabase.from('ticket_events').delete().eq('player_id', id));
+  await withRetry(() => supabase.from('match_events').delete().eq('winner_id', id));
+  await withRetry(() => supabase.from('match_events').delete().eq('loser_id', id));
+  await withRetry(() => supabase.from('tournaments').update({ starting_king_id: null }).eq('starting_king_id', id));
   await withRetry(() => supabase.from('players').delete().eq('id', id));
+}
+
+/** Everyone back to 0 tickets: the current tournament starts a fresh, empty Ticket Bank. */
+export async function resetTicketBank(snap: Snapshot) {
+  await withRetry(() =>
+    supabase.from('tournaments').update({ ticket_bank_id: crypto.randomUUID() }).eq('id', snap.tournament!.id),
+  );
 }
 
 // ------------------------------------------------------------ tickets

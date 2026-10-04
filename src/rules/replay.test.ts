@@ -181,6 +181,23 @@ describe('best-of-3 completion', () => {
   });
 });
 
+describe('deleted players', () => {
+  it('ignores matches and brackets that refer to a deleted player', () => {
+    const events = [m('Ethan', 'Ava'), bracket(['Ethan', 'Ava', 'Ben', 'Cal'])];
+    const withoutCal = players.filter((p) => p.id !== 'Cal');
+    const d = replay(T, withoutCal, events);
+    expect(d.status).toBe('koth');
+    expect(d.bracket).toBeNull();
+    expect(d.stats.Ethan.wins).toBe(1);
+  });
+
+  it('promotes the front of the line when the starting king was deleted', () => {
+    const d = replay(T, players.filter((p) => p.id !== 'Ethan'), []);
+    expect(d.king).toBe('Ava');
+    expect(d.challenger).toBe('Ben');
+  });
+});
+
 describe('undo', () => {
   it('reverses a king change, restoring king, line and stats', () => {
     const before = [m('Ethan', 'Ava'), m('Ethan', 'Ben'), m('Ethan', 'Cal')];

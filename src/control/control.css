@@ -963,3 +963,30 @@
     animation-duration: 0.01s;
   }
 }
+
+/* ---------- add several players ---------- */
+
+.many {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.many summary {
+  cursor: pointer;
+  color: var(--c-blue);
+  font-weight: 600;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.many[open] {
+  gap: 10px;
+}
+
+.many__box {
+  width: 100%;
+  resize: vertical;
+  margin-bottom: 8px;
+}

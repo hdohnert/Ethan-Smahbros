@@ -32,7 +32,13 @@ export function replay(t: RulesTournament | null, players: readonly RulesPlayer[
   const stat = (id: string) => (stats[id] ??= emptyStats());
   for (const p of players) stat(p.id);
 
-  const live = events.filter((e) => !e.undone).sort((a, b) => a.id - b.id);
+  // Skip anything that refers to a player who has since been deleted.
+  const known = new Set(players.map((p) => p.id));
+  const refsOk = (e: RulesEvent) =>
+    (!e.winner_id || known.has(e.winner_id)) &&
+    (!e.loser_id || known.has(e.loser_id)) &&
+    (e.kind !== 'bracket' || ((e.payload as BracketPayload | null)?.seeds ?? []).every((id) => known.has(id)));
+  const live = events.filter((e) => !e.undone && refsOk(e)).sort((a, b) => a.id - b.id);
   const lastEvent = live.length ? live[live.length - 1] : null;
 
   if (!t || t.status === 'setup') {
@@ -47,7 +53,7 @@ export function replay(t: RulesTournament | null, players: readonly RulesPlayer[
     }, players);
   }
 
-  let king: string | null = t.starting_king_id;
+  let king: string | null = t.starting_king_id && known.has(t.starting_king_id) ? t.starting_king_id : null;
   let queue = t.queue.filter((id) => id !== king);
   let status: Derived['status'] = 'koth';
   let bracket: Bracket | null = null;
@@ -143,7 +149,7 @@ function finish(
       .filter((p) => p.active && p.id !== king && !inLine.has(p.id))
       .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
     queue = [...queue, ...newcomers.map((p) => p.id)];
-    if (d.status === 'koth' && king && !isActive(king)) king = queue.shift() ?? null;
+    if (d.status === 'koth' && (!king || !isActive(king))) king = queue.shift() ?? null;
   }
 
   const standings = players
