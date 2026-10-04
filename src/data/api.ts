@@ -180,6 +180,22 @@ export async function awardTickets(snap: Snapshot, playerId: string, amount: num
   );
 }
 
+/** One award for every kid in the list, in a single insert. */
+export async function awardEveryone(snap: Snapshot, playerIds: string[], amount: number, reason: string) {
+  if (!playerIds.length) return;
+  await withRetry(() =>
+    supabase.from('ticket_events').insert(
+      playerIds.map((player_id) => ({
+        bank_id: snap.tournament!.ticket_bank_id,
+        player_id,
+        amount,
+        reason: reason.slice(0, 80),
+        source: 'Control',
+      })),
+    ),
+  );
+}
+
 export async function undoTicket(id: string) {
   await withRetry(() => supabase.from('ticket_events').update({ undone: true }).eq('id', id));
 }

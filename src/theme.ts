@@ -8,7 +8,7 @@ export const theme = {
   shortName: 'Showdown',
   subtitle: 'Smash Bros King of the Hill',
   birthdayName: 'Ethan',
-  age: 10,
+  age: 9,
   /** URL of the hero photo. Null shows the gold monogram instead. */
   heroPhotoUrl: null as string | null,
   monogram: 'E',

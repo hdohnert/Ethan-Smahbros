@@ -330,7 +330,9 @@ function PlayoffCard({ live }: { live: Live }) {
     const tickets = await run(() => recordGame(snap, d, s!.id, winner));
     if (tickets) {
       await live.refresh();
-      toast(tickets.length ? `${get(winner)?.name} wins the series! +${tickets[0].amount} 🎟️` : `${get(winner)?.name} wins the game`);
+      const won = tickets.filter((t) => t.player_id === winner).reduce((n, t) => n + t.amount, 0);
+      const series = tickets.some((t) => t.reason === 'Reached the final' || t.reason === 'Champion!');
+      toast(`${get(winner)?.name} wins the ${series ? 'series' : 'game'}! +${won} 🎟️`);
     }
   };
 

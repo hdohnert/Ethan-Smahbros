@@ -16,6 +16,9 @@ Live at: **https://hdohnert.github.io/Ethan-Smahbros/**
 | 2 | Supabase sync, sign-in, rules module, Control, Undo, playoff, Ticket Bank, Stations, Prize Store, Demo mode | ✅ built |
 | 3 | Animations, birthday effects, sound, reduce-motion polish | next |
 
+Tickets for everyone: every match and playoff game pays 2 just for playing (+2 for a win),
+Game Stations pay all night, and Control → Tickets can give every kid who's here a bonus at once.
+
 ## Views
 
 | Route | Who | What |

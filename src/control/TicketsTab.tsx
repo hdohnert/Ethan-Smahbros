@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { awardTickets, saveSettings, setStationPin, undoTicket } from '../data/api';
+import { awardEveryone, awardTickets, saveSettings, setStationPin, undoTicket } from '../data/api';
+import { Confirm } from '../ui/Confirm';
 import type { Prize } from '../data/types';
 import type { Live } from '../data/useSnapshot';
 import { Avatar } from '../ui/Avatar';
@@ -24,6 +25,8 @@ export function TicketsTab({ live }: { live: Live }) {
         <Toggle label="Show Ticket Bank now" checked={s.showTicketBank} onChange={(v) => set({ showTicketBank: v })} />
         <Toggle label="Auto-show for 15 s every 3 min" checked={s.autoRotateBank} onChange={(v) => set({ autoRotateBank: v })} />
       </section>
+
+      <EveryoneCard live={live} />
 
       <section className="card">
         <h2 className="card__title">Balances</h2>
@@ -169,5 +172,45 @@ function PrizeEditor({ prizes, onSave }: { prizes: Prize[]; onSave: (p: Prize[])
         )}
       </div>
     </div>
+  );
+}
+
+/** Give every kid who's here the same bonus (cake time, good sports, cleanup helpers). */
+function EveryoneCard({ live }: { live: Live }) {
+  const snap = live.snap!;
+  const { busy, run } = useAction();
+  const [reason, setReason] = useState('Good sports!');
+  const [amount, setAmount] = useState<number | null>(null);
+  const here = snap.players.filter((p) => p.active);
+  return (
+    <section className="card stack">
+      <h2 className="card__title">🎉 Everyone gets tickets</h2>
+      <p className="muted small">A bonus for every kid who's here ({here.length}), so nobody goes home empty-handed.</p>
+      <input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={60} placeholder="Reason" />
+      <div className="row amounts">
+        {[1, 2, 3, 5].map((n) => (
+          <button key={n} className="btn btn--go" disabled={busy || !here.length} onClick={() => setAmount(n)}>
+            +{n} all
+          </button>
+        ))}
+      </div>
+      {amount && (
+        <Confirm
+          title={<>Give all {here.length} kids +{amount}?</>}
+          confirmLabel={`Yes, +${amount} for everyone`}
+          onCancel={() => setAmount(null)}
+          onConfirm={() => {
+            const n = amount;
+            setAmount(null);
+            void run(
+              () => awardEveryone(snap, here.map((p) => p.id), n, reason.trim() || 'Bonus for everyone').then(live.refresh),
+              `+${n} for all ${here.length} kids!`,
+            );
+          }}
+        >
+          <p className="muted small">Each award shows under Recent tickets and can be undone one by one.</p>
+        </Confirm>
+      )}
+    </section>
   );
 }

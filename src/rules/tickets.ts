@@ -39,12 +39,22 @@ export function kothResult(
   return { awards: awards.filter((a) => a.amount > 0), rest: kingsRest && newStreak >= REST_STREAK };
 }
 
-/** Tickets for one playoff game; only the game that ends a series pays. */
+/**
+ * Tickets for one playoff game. Every game pays like a regular match (play +
+ * win), and the game that ends a series adds the final/champion bonus.
+ */
 export function playoffGameTickets(s: Series, winner: string, scale: TicketScale): TicketAward[] {
+  const loser = winner === s.a ? s.b! : s.a!;
+  const awards: TicketAward[] = [
+    { player_id: loser, amount: scale.play, reason: 'Played a playoff game' },
+    { player_id: winner, amount: scale.play + scale.win, reason: 'Won a playoff game' },
+  ];
   const wins = (winner === s.a ? s.winsA : s.winsB) + 1;
-  if (wins < SERIES_WINS) return [];
-  if (s.id === 'final') return scale.champion ? [{ player_id: winner, amount: scale.champion, reason: 'Champion!' }] : [];
-  return scale.final ? [{ player_id: winner, amount: scale.final, reason: 'Reached the final' }] : [];
+  if (wins >= SERIES_WINS) {
+    if (s.id === 'final') awards.push({ player_id: winner, amount: scale.champion, reason: 'Champion!' });
+    else awards.push({ player_id: winner, amount: scale.final, reason: 'Reached the final' });
+  }
+  return awards.filter((a) => a.amount > 0);
 }
 
 export function top4Tickets(seeds: string[], scale: TicketScale): TicketAward[] {

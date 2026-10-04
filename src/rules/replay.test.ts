@@ -160,12 +160,15 @@ describe('best-of-3 completion', () => {
     expect(d.bracket?.semi1).toMatchObject({ winsA: 2, winsB: 1, winner: 'Ethan' });
     expect(d.bracket?.final).toMatchObject({ a: 'Ethan', b: 'Ben', winner: null });
     expect(d.currentSeries?.id).toBe('final');
-    expect(playoffGameTickets(d.currentSeries!, 'Ben', DEFAULT_TICKETS)).toEqual([]);
+    expect(playoffGameTickets(d.currentSeries!, 'Ben', DEFAULT_TICKETS)).toEqual([
+      { player_id: 'Ethan', amount: 2, reason: 'Played a playoff game' },
+      { player_id: 'Ben', amount: 4, reason: 'Won a playoff game' },
+    ]);
 
     d = replay(T, players, [...events, game('final', 'Ben', 'Ethan')]);
-    expect(playoffGameTickets(d.currentSeries!, 'Ben', DEFAULT_TICKETS)).toEqual([
-      { player_id: 'Ben', amount: 10, reason: 'Champion!' },
-    ]);
+    expect(playoffGameTickets(d.currentSeries!, 'Ben', DEFAULT_TICKETS)).toContainEqual({
+      player_id: 'Ben', amount: 10, reason: 'Champion!',
+    });
     d = replay(T, players, [...events, game('final', 'Ben', 'Ethan'), game('final', 'Ben', 'Ethan')]);
     expect(d.champion).toBe('Ben');
     expect(d.status).toBe('finished');
