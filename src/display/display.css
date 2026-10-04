@@ -289,10 +289,10 @@
 
 .hero__age {
   position: absolute;
-  right: -1.8vh;
-  bottom: -0.8vh;
-  min-width: 5vh;
-  height: 5vh;
+  right: -3.2vh;
+  bottom: -1.4vh;
+  min-width: 4.6vh;
+  height: 4.6vh;
   padding: 0 1vh;
   border-radius: 999px;
   display: grid;
@@ -1014,6 +1014,269 @@
   min-width: 0;
 }
 
+/* ---------- Phase 3 effects on the board ---------- */
+
+.display--shake .board,
+.display--shake .hero-screen {
+  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate(-0.4vw, 0); }
+  20%, 80% { transform: translate(0.8vw, 0.3vh); }
+  30%, 50%, 70% { transform: translate(-1.2vw, -0.3vh); }
+  40%, 60% { transform: translate(1.2vw, 0.3vh); }
+}
+
+.lb-body .lb-row {
+  position: relative;
+}
+
+.lb-row--ko {
+  animation: row-ko 0.9s ease;
+}
+
+@keyframes row-ko {
+  0%, 100% { background: transparent; }
+  20% { background: rgba(255, 200, 61, 0.35); }
+}
+
+.lb-rank {
+  position: relative;
+}
+
+.lb-move {
+  position: absolute;
+  right: -0.4vh;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 2.2vh;
+  animation: fade-in 0.3s ease;
+}
+
+.lb-move--up {
+  color: var(--c-lime);
+}
+
+.lb-move--down {
+  color: var(--c-danger);
+}
+
+.badges {
+  display: inline-flex;
+  gap: 0.4vh;
+  flex: none;
+}
+
+.badge {
+  font-size: 2.8vh;
+  filter: drop-shadow(0 0 0.8vh rgba(255, 200, 61, 0.6));
+}
+
+.fighter {
+  position: relative;
+}
+
+.fighter--ko .fighter__name {
+  animation: name-ko 0.9s ease;
+}
+
+@keyframes name-ko {
+  0% { transform: scale(1); }
+  20% { transform: scale(1.25); color: var(--c-gold); }
+  100% { transform: scale(1); }
+}
+
+.ko-burst {
+  position: absolute;
+  left: 30%;
+  top: 10%;
+  font-family: var(--f-display);
+  font-size: 8vh;
+  color: var(--c-pink);
+  text-shadow: 0 0 2vh rgba(255, 45, 149, 0.9);
+  pointer-events: none;
+  animation: ko-burst 0.9s ease forwards;
+}
+
+@keyframes ko-burst {
+  0% { opacity: 0; transform: scale(0.4) rotate(-10deg); }
+  25% { opacity: 1; transform: scale(1.2) rotate(-6deg); }
+  100% { opacity: 0; transform: scale(1) rotate(-6deg); }
+}
+
+.fighter--blaze .fire {
+  font-size: 2em;
+  filter: drop-shadow(0 0 1.5vh rgba(255, 90, 0, 0.9));
+}
+
+.series__row--ko {
+  animation: row-ko 0.9s ease;
+}
+
+/* ---------- Hero screen (attract mode) ---------- */
+
+.hero-screen {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 5vw;
+  overflow: hidden;
+}
+
+.hero-screen__balloons {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hero-screen__balloons span {
+  position: absolute;
+  bottom: -12vh;
+  font-size: 10vh;
+  opacity: 0;
+  animation: balloon-rise 9s ease-in infinite;
+}
+
+@keyframes balloon-rise {
+  0% { transform: translateY(0) rotate(-4deg); opacity: 0; }
+  10% { opacity: 0.85; }
+  100% { transform: translateY(-120vh) rotate(6deg); opacity: 0; }
+}
+
+.hero-screen__photo-wrap {
+  position: relative;
+  width: 62vh;
+  height: 62vh;
+  margin-left: 2vw;
+}
+
+.hero-screen__ring {
+  position: absolute;
+  inset: -2.2vh;
+  border-radius: 50%;
+  background: conic-gradient(var(--c-pink), var(--c-blue), var(--c-lime), var(--c-gold), var(--c-pink));
+  animation: spin 8s linear infinite;
+  box-shadow: 0 0 8vh rgba(255, 45, 149, 0.55);
+}
+
+.hero-screen__photo {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  border: 1.2vh solid var(--c-bg);
+  background: radial-gradient(circle at 40% 35%, #3b1d8f, #12073a);
+}
+
+.hero-screen__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hero-screen__photo .hero__monogram {
+  font-size: 34vh;
+}
+
+.hero-screen__crown {
+  position: absolute;
+  left: 50%;
+  top: -13vh;
+  font-size: 16vh;
+  transform: translateX(-50%) rotate(-8deg);
+  filter: drop-shadow(0 0 2vh rgba(255, 200, 61, 0.8));
+}
+
+.hero-screen__hat {
+  position: absolute;
+  right: -4vh;
+  top: 2vh;
+  font-size: 11vh;
+  transform: rotate(18deg);
+}
+
+.hero-screen__text {
+  position: relative;
+}
+
+.hero-screen__happy {
+  font-family: var(--f-fun);
+  font-size: min(11vh, 6vw);
+  color: var(--c-blue);
+  text-shadow: 0 0 3vh rgba(33, 212, 253, 0.9);
+}
+
+.hero-screen__name {
+  font-family: var(--f-display);
+  font-size: min(20vh, 10vw);
+  line-height: 1;
+  color: var(--c-pink);
+  text-shadow:
+    0 0 3vh rgba(255, 45, 149, 0.9),
+    0 0 8vh rgba(255, 45, 149, 0.6);
+  animation: glow-pink 2s ease-in-out infinite alternate;
+}
+
+.hero-screen__age {
+  display: flex;
+  align-items: baseline;
+  gap: 2vw;
+  margin-top: 2vh;
+}
+
+.hero-screen__age span {
+  font-family: var(--f-display);
+  font-size: 30vh;
+  line-height: 0.9;
+  color: var(--c-gold);
+  text-shadow: 0 0 5vh rgba(255, 200, 61, 0.8);
+}
+
+.hero-screen__age small {
+  font-family: var(--f-fun);
+  font-size: 4vh;
+  color: var(--c-lime);
+}
+
+@keyframes glow-pink {
+  to {
+    text-shadow:
+      0 0 5vh rgba(255, 45, 149, 1),
+      0 0 12vh rgba(255, 45, 149, 0.8);
+  }
+}
+
+/* ---------- Rules screen (attract mode) ---------- */
+
+.rules-screen {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2vw;
+}
+
+.rules-screen__card {
+  padding: 3vh 2.5vw;
+}
+
+.rules-screen__card h2 {
+  margin: 0 0 2vh;
+  font-family: var(--f-display);
+  font-weight: 400;
+  font-size: 4.4vh;
+  color: var(--c-gold);
+}
+
+.rules-screen__card p {
+  margin: 0;
+  font-size: 4vh;
+  line-height: 1.35;
+}
+
 /* ---------- Narrower screens (iPad 4:3, 3:2) ---------- */
 
 /* Rules show one at a time on narrow screens; both fit side by side at 16:9. */
@@ -1094,7 +1357,21 @@
   .rotate-overlay__icon {
     animation: none;
   }
-  .hero__balloons {
+  .hero__balloons,
+  .hero-screen__balloons {
     display: none;
+  }
+  .hero-screen__ring,
+  .hero-screen__name {
+    animation: none;
+  }
+  .display--shake .board,
+  .display--shake .hero-screen {
+    animation: none;
+  }
+  .lb-row--ko,
+  .series__row--ko,
+  .fighter--ko .fighter__name {
+    animation: fade-in 0.6s ease;
   }
 }

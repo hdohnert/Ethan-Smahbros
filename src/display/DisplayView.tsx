@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { isConfigured } from '../data/supabase';
 import { useAuth } from '../data/useAuth';
 import { useSnapshot, type Source } from '../data/useSnapshot';
@@ -10,6 +10,12 @@ import { EndCard } from './EndCard';
 import { buildModel, type BoardModel } from './model';
 import { sampleModel } from './sampleData';
 import { TicketBank } from './TicketBank';
+import { HeroScreen } from './HeroScreen';
+import { RulesScreen } from './RulesScreen';
+import { ATTRACT_AFTER_MS, ATTRACT_SLIDE_MS } from '../effects/config';
+import { Kickoff, MomentOverlay } from '../effects/Overlays';
+import { useEffectsEngine } from '../effects/useEffectsEngine';
+import { useReducedMotion } from '../effects/useReducedMotion';
 import './display.css';
 
 const BANK_EVERY_MS = 3 * 60 * 1000;
@@ -64,10 +70,14 @@ function Show({
   token: string | null;
 }) {
   const [started, setStarted] = useState(false);
+  const [kickoff, setKickoff] = useState(false);
   const [lockMode, setLockMode] = useState<WakeLockMode>('off');
   const [showStatus, setShowStatus] = useState(false);
   const idle = useIdle(started, 2000);
+  const reduced = useReducedMotion();
   const view = useView(model);
+  const fx = useEffectsEngine(model, started && !kickoff, reduced);
+  const endKickoff = useCallback(() => setKickoff(false), []);
 
   useEffect(() => {
     wakeLock.onChange = setLockMode;
@@ -81,11 +91,14 @@ function Show({
     // these promises is allowed to hold up the show if a browser stalls.
     const fs = enterFullscreen();
     const lock = wakeLock.enable();
-    if (model?.settings.sound) void unlockAudio();
+    // Unlock audio on this one tap even if sound is off now, so switching it on
+    // later in Control works without anyone touching the TV.
+    void unlockAudio();
     // In Safari (before Add to Home Screen) put the link on the clipboard: the
     // installed app has separate storage and can paste it back in one tap.
     if (token && !isStandalone()) void copyText(appUrl(`display?t=${token}`));
     setStarted(true);
+    setKickoff(true);
     void fs.then(lockLandscape);
     await Promise.race([lock, new Promise((r) => setTimeout(r, 3000))]);
     setShowStatus(true);
@@ -98,12 +111,16 @@ function Show({
   else if (!model) content = <div className="safe start"><div className="start__hint">Loading the scoreboard…</div></div>;
   else if (view === 'end') content = <EndCard m={model} />;
   else if (view === 'bank') content = <TicketBank m={model} />;
-  else content = <Board m={model} />;
+  else if (view === 'hero') content = <HeroScreen m={model} />;
+  else if (view === 'rules') content = <RulesScreen m={model} />;
+  else content = <Board m={model} fx={fx} />;
 
   return (
-    <div className={`display${idle ? ' display--idle' : ''}`}>
+    <div className={`display${idle ? ' display--idle' : ''}${fx.shake ? ' display--shake' : ''}`}>
       <div className="starfield" aria-hidden />
       {content}
+      {started && model && <MomentOverlay m={model} fx={fx} reduced={reduced} />}
+      {kickoff && <Kickoff m={model} reduced={reduced} onDone={endKickoff} />}
       {showStatus && (
         <div className="status-pill">
           {lockMode === 'off' ? '⚠️ Screen may sleep: set Auto-Lock to Never' : '✅ Screen will stay on'}
@@ -118,12 +135,25 @@ function Show({
   );
 }
 
-/** board | bank | end, from Control's switches, the auto-rotate timer and the tournament state. */
-function useView(model: BoardModel | null): 'board' | 'bank' | 'end' {
+type View = 'board' | 'bank' | 'end' | 'hero' | 'rules';
+const ATTRACT: View[] = ['hero', 'board', 'bank', 'rules'];
+
+/**
+ * Which screen to show: Control's Ticket Bank switch wins, then the end card,
+ * then attract mode (after a quiet minute, cycle hero → board → bank → rules),
+ * then the 15 s Ticket Bank peek every 3 minutes, else the board.
+ */
+function useView(model: BoardModel | null): View {
   const [rotating, setRotating] = useState(false);
   const [lastChange, setLastChange] = useState(() => Date.now());
+  const [now, setNow] = useState(() => Date.now());
   const lastEventId = model?.lastEventId;
-  useEffect(() => setLastChange(Date.now()), [lastEventId]);
+  const status = model?.status;
+  useEffect(() => setLastChange(Date.now()), [lastEventId, status]);
+  useEffect(() => {
+    const t = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(t);
+  }, []);
 
   const auto = !!model?.settings.autoRotateBank && model.status !== 'finished';
   useEffect(() => {
@@ -140,6 +170,10 @@ function useView(model: BoardModel | null): 'board' | 'bank' | 'end' {
   if (!model) return 'board';
   if (model.settings.showTicketBank) return 'bank';
   if (model.status === 'finished') return 'end';
+  const quiet = now - lastChange;
+  if (quiet >= ATTRACT_AFTER_MS && model.status !== 'playoff') {
+    return ATTRACT[Math.floor((quiet - ATTRACT_AFTER_MS) / ATTRACT_SLIDE_MS) % ATTRACT.length];
+  }
   return rotating ? 'bank' : 'board';
 }
 

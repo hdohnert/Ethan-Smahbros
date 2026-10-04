@@ -2,11 +2,12 @@ import { Avatar } from '../ui/Avatar';
 import { Bracket } from './Bracket';
 import { Hero } from './Hero';
 import { Leaderboard } from './Leaderboard';
+import type { EffectsState } from '../effects/useEffectsEngine';
 import type { BoardModel } from './model';
 import { Rules } from './Rules';
 import { Stage } from './Stage';
 
-export function Board({ m }: { m: BoardModel }) {
+export function Board({ m, fx }: { m: BoardModel; fx?: EffectsState }) {
   const playoff = m.status === 'playoff' && m.bracket;
   return (
     <div className="board safe">
@@ -14,11 +15,11 @@ export function Board({ m }: { m: BoardModel }) {
       <main className="board__main">
         <section className="board__left">
           {playoff ? (
-            <Bracket m={m} />
+            <Bracket m={m} fx={fx} />
           ) : (
             <>
-              <Stage m={m} />
-              <Leaderboard players={m.standings} />
+              <Stage m={m} fx={fx} />
+              <Leaderboard players={m.standings} fx={fx} />
             </>
           )}
         </section>

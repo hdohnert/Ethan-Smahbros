@@ -107,6 +107,16 @@ export function SettingsTab({ live, email }: { live: Live; email: string }) {
         <p className="muted small">Changes apply to results from now on; tickets already paid stay as they are.</p>
       </section>
 
+      <section className="card stack">
+        <h2 className="card__title">🔊 TV sound</h2>
+        <Toggle
+          label="Sound effects on the TV (KO, New King, Champion)"
+          checked={snap.settings.sound}
+          onChange={(v) => run(() => saveSettings(snap, { sound: v }).then(live.refresh), v ? 'Sound on' : 'Sound off')}
+        />
+        <p className="muted small">Plays through the TV when mirroring. The TV must have been started with its big start button.</p>
+      </section>
+
       {dirty && (
         <button className="btn btn--xl btn--go sticky-save" disabled={busy} onClick={() => save(form)}>
           Save settings

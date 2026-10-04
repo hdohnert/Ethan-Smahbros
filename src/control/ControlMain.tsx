@@ -128,7 +128,8 @@ function useDemo(snap: Snapshot | null, refresh: () => Promise<void>): DemoContr
             await refresh();
           }
         }
-        await new Promise((r) => setTimeout(r, 3500));
+        // Slow enough for each effect (KO, banner, countdown) to play on the TV.
+        await new Promise((r) => setTimeout(r, 6500));
       }
     };
     void loop();

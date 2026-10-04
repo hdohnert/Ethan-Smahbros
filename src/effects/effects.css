@@ -1,0 +1,330 @@
+/* Big-moment overlays and quick effects on the TV. Transform/opacity only. */
+
+.moment {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(ellipse at center, rgba(7, 5, 26, 0.55), rgba(7, 5, 26, 0.92) 70%);
+  pointer-events: none;
+}
+
+.moment--champion {
+  background: radial-gradient(ellipse at center, #3a1d00, var(--c-bg) 70%);
+}
+
+.slam {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3vh;
+  text-align: center;
+}
+
+.slam__kicker {
+  font-family: var(--f-display);
+  font-size: min(11vh, 7vw);
+  line-height: 1;
+  color: var(--c-gold);
+  text-shadow:
+    0 0 3vh rgba(255, 200, 61, 0.8),
+    0 0 8vh rgba(255, 45, 149, 0.6);
+}
+
+.slam__kicker--flash {
+  color: var(--c-lime);
+  animation: flash-text 0.3s steps(2) 3;
+}
+
+.slam__row {
+  display: flex;
+  align-items: center;
+  gap: 3vh;
+}
+
+.slam__name {
+  font-family: var(--f-fun);
+  font-size: min(16vh, 10vw);
+  line-height: 1;
+  letter-spacing: 0.03em;
+  color: #fff;
+  text-shadow: 0 0 4vh rgba(33, 212, 253, 0.8);
+}
+
+.slam__name--gold {
+  color: var(--c-gold);
+  text-shadow: 0 0 4vh rgba(255, 200, 61, 0.9);
+}
+
+.avatar.avatar--xl {
+  width: 18vh;
+  height: 18vh;
+  font-size: 11vh;
+  box-shadow: 0 0 4vh rgba(255, 255, 255, 0.35);
+}
+
+.count {
+  font-family: var(--f-display);
+  font-size: 40vh;
+  line-height: 1;
+  color: var(--c-blue);
+  text-shadow: 0 0 6vh rgba(33, 212, 253, 0.9);
+}
+
+.count--fight {
+  font-size: min(30vh, 18vw);
+  color: var(--c-pink);
+  text-shadow: 0 0 6vh rgba(255, 45, 149, 0.9);
+}
+
+@keyframes flash-text {
+  50% {
+    opacity: 0.2;
+  }
+}
+
+/* ---------- final intro ---------- */
+
+.final-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5vh;
+}
+
+.final-intro__title {
+  font-family: var(--f-display);
+  font-size: 26vh;
+  line-height: 1;
+  color: var(--c-gold);
+  text-shadow:
+    0 0 4vh rgba(255, 200, 61, 0.9),
+    0 0 12vh rgba(255, 90, 0, 0.6);
+}
+
+.final-intro__row {
+  display: flex;
+  align-items: center;
+  gap: 6vw;
+}
+
+.final-intro__p {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2vh;
+  font-family: var(--f-fun);
+  font-size: 9vh;
+}
+
+.final-intro__vs {
+  font-family: var(--f-display);
+  font-size: 9vh;
+  color: var(--c-pink);
+}
+
+/* ---------- champion ---------- */
+
+.champ-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2vh;
+  text-align: center;
+}
+
+.champ-screen__trophy {
+  font-size: 26vh;
+  line-height: 1;
+  filter: drop-shadow(0 0 4vh rgba(255, 200, 61, 0.9));
+}
+
+.champ-screen__banner {
+  font-family: var(--f-display);
+  font-size: min(12vh, 7vw);
+  padding: 1vh 5vh;
+  border-radius: 2vh;
+  color: var(--c-bg);
+  background: linear-gradient(180deg, #fff1a8, #ffc83d 50%, #e09a00);
+  box-shadow: 0 0 6vh rgba(255, 200, 61, 0.7);
+}
+
+.champ-screen__at {
+  font-family: var(--f-fun);
+  font-size: 4vh;
+  color: var(--c-blue);
+}
+
+/* ---------- kickoff ---------- */
+
+.kickoff {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  display: grid;
+  place-items: center;
+  background: #000;
+  animation: kickoff-out 0.5s ease 4.5s forwards;
+}
+
+.kickoff__lights {
+  position: absolute;
+  top: 8vh;
+  left: 8vw;
+  right: 8vw;
+  display: flex;
+  justify-content: space-between;
+}
+
+.kickoff__lights span {
+  width: 4vh;
+  height: 4vh;
+  border-radius: 50%;
+  background: var(--c-gold);
+  box-shadow: 0 0 3vh var(--c-gold);
+  opacity: 0;
+  animation: bulb 0.5s steps(2) forwards;
+}
+
+.kickoff__lights span:nth-child(3n + 1) {
+  background: var(--c-pink);
+  box-shadow: 0 0 3vh var(--c-pink);
+}
+
+.kickoff__lights span:nth-child(3n + 2) {
+  background: var(--c-blue);
+  box-shadow: 0 0 3vh var(--c-blue);
+}
+
+.kickoff__text {
+  text-align: center;
+  opacity: 0;
+  transform: scale(3);
+  animation: slam-in 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) 2.2s forwards;
+}
+
+.kickoff__happy {
+  font-family: var(--f-fun);
+  font-size: 10vh;
+  color: var(--c-blue);
+  text-shadow: 0 0 3vh rgba(33, 212, 253, 0.9);
+}
+
+.kickoff__name {
+  font-family: var(--f-display);
+  font-size: min(24vh, 16vw);
+  line-height: 1;
+  color: var(--c-gold);
+  text-shadow:
+    0 0 4vh rgba(255, 200, 61, 0.9),
+    0 0 10vh rgba(255, 45, 149, 0.7);
+}
+
+.kickoff--calm .kickoff__text {
+  transform: none;
+  animation: fade-in 0.8s ease 1.5s forwards;
+}
+
+@keyframes bulb {
+  0% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.2;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes slam-in {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes kickoff-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* ---------- ticket fly-in (inside a leaderboard row) ---------- */
+
+.ticket-fly {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ticket-fly__t {
+  position: absolute;
+  left: 14cqw;
+  top: 50%;
+  margin-top: -1.8vh;
+  font-size: 3.6vh;
+  opacity: 0;
+  animation: ticket-fly 0.9s cubic-bezier(0.3, 0.6, 0.4, 1) forwards;
+}
+
+.ticket-fly__plus {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  margin-top: -2.4vh;
+  font-family: var(--f-display);
+  font-size: 4vh;
+  color: var(--c-lime);
+  text-shadow: 0 0 1.5vh rgba(182, 255, 59, 0.9);
+  opacity: 0;
+  animation: plus-pop 1.4s ease 0.5s forwards;
+}
+
+@keyframes ticket-fly {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.6);
+  }
+  15% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate(40cqw, -3vh) scale(1.2) rotate(15deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(76cqw, 0) scale(0.8) rotate(0);
+  }
+}
+
+@keyframes plus-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(1vh) scale(0.6);
+  }
+  25% {
+    opacity: 1;
+    transform: translateY(-2vh) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-5vh) scale(1);
+  }
+}
+
+/* ---------- reduced motion: fades instead of slams, shakes and flashes ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .slam__kicker--flash,
+  .kickoff__lights span {
+    animation: fade-in 0.4s ease forwards;
+  }
+  .ticket-fly__t {
+    display: none;
+  }
+}

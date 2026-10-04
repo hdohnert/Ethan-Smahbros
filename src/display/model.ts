@@ -20,6 +20,8 @@ export interface BoardPlayer {
   tickets: number;
   /** Tickets earned tonight before any prizes were bought. */
   earned: number;
+  formerKing: boolean;
+  giantSlayer: number;
 }
 
 export interface BoardSeries {
@@ -67,6 +69,8 @@ export function buildModel(snap: Snapshot, d: Derived, balances: Record<string, 
       played: s.played,
       tickets: balances[p.id] ?? 0,
       earned: earned[p.id] ?? balances[p.id] ?? 0,
+      formerKing: s.formerKing,
+      giantSlayer: s.giantSlayer,
     });
   }
   const get = (id: string | null | undefined) => (id ? (byId.get(id) ?? null) : null);

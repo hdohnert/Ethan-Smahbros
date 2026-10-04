@@ -15,9 +15,12 @@ export function isStandalone(): boolean {
   );
 }
 
-/** Enters full screen where the Fullscreen API exists (iPad, Mac, Android). No-op on iPhone and in a PWA. */
+/**
+ * Enters full screen where the Fullscreen API exists (iPad, Mac, Android).
+ * Tried even inside a home-screen app: on iPad that hides the clock/battery
+ * bar, which standalone mode alone keeps. A no-op on iPhone.
+ */
 export async function enterFullscreen(): Promise<boolean> {
-  if (isStandalone()) return false;
   const doc = document as FsDocument;
   if (doc.fullscreenElement || doc.webkitFullscreenElement) return true;
   const el = document.documentElement as FsElement;
