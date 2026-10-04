@@ -1,19 +1,73 @@
-import { useEffect, useState } from 'react';
-import { enterFullscreen, lockLandscape, unlockAudio, wakeLock, type WakeLockMode } from '../lib/screen';
+import { useEffect, useMemo, useState } from 'react';
+import { isConfigured } from '../data/supabase';
+import { useAuth } from '../data/useAuth';
+import { useSnapshot, type Source } from '../data/useSnapshot';
+import { enterFullscreen, isStandalone, lockLandscape, unlockAudio, wakeLock, type WakeLockMode } from '../lib/screen';
 import { useIdle } from '../lib/useIdleCursor';
-import { theme } from '../theme';
+import { appUrl, copyText, store } from '../ui/device';
 import { Board } from './Board';
-import { sampleMatch, samplePlayers } from './sampleData';
+import { EndCard } from './EndCard';
+import { buildModel, type BoardModel } from './model';
+import { sampleModel } from './sampleData';
+import { TicketBank } from './TicketBank';
 import './display.css';
 
-// Sound is off until phase 3 adds the Control toggle.
-const SOUND_ON = false;
+const BANK_EVERY_MS = 3 * 60 * 1000;
+const BANK_FOR_MS = 15 * 1000;
+
+function hashParams() {
+  return new URLSearchParams(location.hash.split('?')[1] ?? '');
+}
+
+/** Read-only token from the link (#/display?t=…), remembered on this device. */
+function useDisplayToken(): [string | null, (t: string | null) => void] {
+  const [token, setToken] = useState<string | null>(() => {
+    const fromUrl = hashParams().get('t');
+    if (fromUrl) store('display-token', fromUrl);
+    return fromUrl ?? store('display-token');
+  });
+  return [token, (t) => setToken(store('display-token', t))];
+}
 
 export function DisplayView() {
+  const sample = !isConfigured || hashParams().has('sample');
+  const [token, setToken] = useDisplayToken();
+  const auth = useAuth();
+  const src: Source | null = sample ? null : token ? { kind: 'token', token } : auth.owner ? { kind: 'owner' } : null;
+  const live = useSnapshot(src);
+  const model = useMemo<BoardModel | null>(() => {
+    if (sample) return sampleModel();
+    return live.snap && live.derived ? buildModel(live.snap, live.derived, live.balances) : null;
+  }, [sample, live.snap, live.derived, live.balances]);
+
+  // A revoked or mistyped token: forget it and ask again.
+  const badToken = !!token && !live.snap && /not allowed/i.test(live.error ?? '');
+  useEffect(() => {
+    if (badToken) setToken(null);
+  }, [badToken, setToken]);
+
+  const needsLink = !sample && !src && !auth.loading;
+  return <Show model={model} needsLink={needsLink} onToken={setToken} offline={!sample && !live.online} token={token} />;
+}
+
+function Show({
+  model,
+  needsLink,
+  onToken,
+  offline,
+  token,
+}: {
+  model: BoardModel | null;
+  needsLink: boolean;
+  onToken: (t: string) => void;
+  offline: boolean;
+  token: string | null;
+}) {
   const [started, setStarted] = useState(false);
   const [lockMode, setLockMode] = useState<WakeLockMode>('off');
   const [showStatus, setShowStatus] = useState(false);
   const idle = useIdle(started, 2000);
+  const view = useView(model);
 
   useEffect(() => {
     wakeLock.onChange = setLockMode;
@@ -23,12 +77,14 @@ export function DisplayView() {
   }, []);
 
   async function start() {
-    // Everything that needs a user gesture happens in this one tap.
     // Start them all synchronously, then show the board right away: none of
     // these promises is allowed to hold up the show if a browser stalls.
     const fs = enterFullscreen();
     const lock = wakeLock.enable();
-    if (SOUND_ON) void unlockAudio();
+    if (model?.settings.sound) void unlockAudio();
+    // In Safari (before Add to Home Screen) put the link on the clipboard: the
+    // installed app has separate storage and can paste it back in one tap.
+    if (token && !isStandalone()) void copyText(appUrl(`display?t=${token}`));
     setStarted(true);
     void fs.then(lockLandscape);
     await Promise.race([lock, new Promise((r) => setTimeout(r, 3000))]);
@@ -36,19 +92,24 @@ export function DisplayView() {
     window.setTimeout(() => setShowStatus(false), 5000);
   }
 
+  let content;
+  if (needsLink) content = <LinkScreen onToken={onToken} />;
+  else if (!started) content = <StartScreen title={model?.settings.title} onStart={start} />;
+  else if (!model) content = <div className="safe start"><div className="start__hint">Loading the scoreboard…</div></div>;
+  else if (view === 'end') content = <EndCard m={model} />;
+  else if (view === 'bank') content = <TicketBank m={model} />;
+  else content = <Board m={model} />;
+
   return (
     <div className={`display${idle ? ' display--idle' : ''}`}>
       <div className="starfield" aria-hidden />
-      {started ? (
-        <Board players={samplePlayers} match={sampleMatch} />
-      ) : (
-        <StartScreen onStart={start} />
-      )}
+      {content}
       {showStatus && (
         <div className="status-pill">
           {lockMode === 'off' ? '⚠️ Screen may sleep: set Auto-Lock to Never' : '✅ Screen will stay on'}
         </div>
       )}
+      {started && offline && <div className="offline-dot" title="Reconnecting" />}
       <div className="rotate-overlay">
         <div className="rotate-overlay__icon">📱↻</div>
         <div>Rotate to landscape</div>
@@ -57,14 +118,83 @@ export function DisplayView() {
   );
 }
 
-function StartScreen({ onStart }: { onStart: () => void }) {
+/** board | bank | end, from Control's switches, the auto-rotate timer and the tournament state. */
+function useView(model: BoardModel | null): 'board' | 'bank' | 'end' {
+  const [rotating, setRotating] = useState(false);
+  const [lastChange, setLastChange] = useState(() => Date.now());
+  const lastEventId = model?.lastEventId;
+  useEffect(() => setLastChange(Date.now()), [lastEventId]);
+
+  const auto = !!model?.settings.autoRotateBank && model.status !== 'finished';
+  useEffect(() => {
+    if (!auto) return;
+    const t = window.setInterval(() => {
+      // Only between matches: skip a turn if a result just came in.
+      if (Date.now() - lastChange < 20000) return;
+      setRotating(true);
+      window.setTimeout(() => setRotating(false), BANK_FOR_MS);
+    }, BANK_EVERY_MS);
+    return () => window.clearInterval(t);
+  }, [auto, lastChange]);
+
+  if (!model) return 'board';
+  if (model.settings.showTicketBank) return 'bank';
+  if (model.status === 'finished') return 'end';
+  return rotating ? 'bank' : 'board';
+}
+
+function StartScreen({ title, onStart }: { title?: string; onStart: () => void }) {
   return (
     <div className="start safe">
-      <h1 className="start__title">{theme.title}</h1>
+      <h1 className="start__title">{title ?? "Ethan's Birthday Showdown"}</h1>
       <button className="start__btn" onClick={onStart} autoFocus>
         Tap to start the show
       </button>
       <p className="start__hint">Goes full screen and keeps the screen awake</p>
     </div>
+  );
+}
+
+function LinkScreen({ onToken }: { onToken: (t: string) => void }) {
+  const [text, setText] = useState('');
+  return (
+    <form
+      className="start safe"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const v = text.trim();
+        const m = v.match(/[?&]t=([a-z0-9]+)/i);
+        if (v) onToken(m ? m[1] : v);
+      }}
+    >
+      <h1 className="start__title start__title--small">Connect this TV</h1>
+      <p className="start__hint">
+        On your phone: Control → Match → <b>Get the Display link</b>. Open that link here, or paste it (or just the code after
+        "t=") below.
+      </p>
+      <input className="link-input" value={text} onChange={(e) => setText(e.target.value)} placeholder="Paste the Display link or code" autoCapitalize="off" autoCorrect="off" />
+      <div className="row-center">
+        <button className="start__btn start__btn--small">Connect</button>
+        <button
+          type="button"
+          className="start__btn start__btn--small start__btn--alt"
+          onClick={async () => {
+            try {
+              const v = (await navigator.clipboard.readText()).trim();
+              const m = v.match(/[?&]t=([a-z0-9]+)/i);
+              if (m) onToken(m[1]);
+              else setText(v);
+            } catch {
+              /* paste refused: the text box still works */
+            }
+          }}
+        >
+          Paste link
+        </button>
+      </div>
+      <a className="start__hint" href="#/display?sample">
+        or preview with sample data
+      </a>
+    </form>
   );
 }

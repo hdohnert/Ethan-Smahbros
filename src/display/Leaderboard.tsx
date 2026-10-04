@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
-import type { BoardPlayer } from './sampleData';
-import { Avatar } from './Board';
+import { Avatar } from '../ui/Avatar';
+import type { BoardPlayer } from './model';
 
 const VISIBLE_ROWS = 8;
 

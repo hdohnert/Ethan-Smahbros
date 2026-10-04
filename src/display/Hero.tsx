@@ -1,7 +1,9 @@
+import type { BoardModel } from './model';
 import { theme } from '../theme';
 
-/** Ethan's circle-cropped photo with a rotating neon ring, crown and drifting balloons. */
-export function Hero() {
+/** The birthday kid's circle-cropped photo with a rotating neon ring, crown and drifting balloons. */
+export function Hero({ m }: { m: BoardModel }) {
+  const s = m.settings;
   return (
     <div className="hero">
       <div className="hero__balloons" aria-hidden>
@@ -11,16 +13,12 @@ export function Hero() {
       </div>
       <div className="hero__ring" aria-hidden />
       <div className="hero__photo">
-        {theme.heroPhotoUrl ? (
-          <img src={theme.heroPhotoUrl} alt={theme.birthdayName} />
-        ) : (
-          <span className="hero__monogram">{theme.monogram}</span>
-        )}
+        {s.heroPhotoUrl ? <img src={s.heroPhotoUrl} alt={s.birthdayName} /> : <span className="hero__monogram">{m.monogram}</span>}
       </div>
       <div className="hero__crown" aria-hidden>
         👑
       </div>
-      <div className="hero__age">{theme.age}</div>
+      {s.age != null && <div className="hero__age">{s.age}</div>}
     </div>
   );
 }

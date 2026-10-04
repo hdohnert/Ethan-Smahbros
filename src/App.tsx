@@ -1,12 +1,36 @@
-import { useHashRoute } from './lib/useHashRoute';
+import { lazy, Suspense, useEffect } from 'react';
 import { DisplayView } from './display/DisplayView';
+import { isStandalone } from './lib/screen';
+import { useHashRoute } from './lib/useHashRoute';
+
+// Phone views load on demand so the TV only downloads what it shows.
+const ControlApp = lazy(() => import('./control/ControlApp').then((m) => ({ default: m.ControlApp })));
+const StationView = lazy(() => import('./station/StationView').then((m) => ({ default: m.StationView })));
+const PrizeStoreView = lazy(() => import('./station/PrizeStoreView').then((m) => ({ default: m.PrizeStoreView })));
 import { theme } from './theme';
+import { store } from './ui/device';
+
+const ROLES = ['display', 'control', 'station', 'prizes'];
 
 export function App() {
-  const route = useHashRoute();
-  if (route === 'display') return <DisplayView />;
-  if (route === 'control') return <ControlPlaceholder />;
-  return <Home />;
+  const [route, hash] = useHashRoute();
+
+  // Each home-screen install has its own storage, so remember which view this
+  // install is for and reopen it when launched from the icon.
+  useEffect(() => {
+    if (ROLES.includes(route)) store('role', route);
+    else if (route === '' && isStandalone()) {
+      const role = store('role');
+      if (role && ROLES.includes(role)) location.hash = `#/${role}`;
+    }
+  }, [route]);
+
+  if (route === 'display') return <DisplayView key={hash} />;
+  return (
+    <Suspense fallback={null}>
+      {route === 'control' ? <ControlApp /> : route === 'station' ? <StationView /> : route === 'prizes' ? <PrizeStoreView /> : <Home />}
+    </Suspense>
+  );
 }
 
 function Home() {
@@ -19,21 +43,13 @@ function Home() {
           📺 Display <small>for the TV</small>
         </a>
         <a className="home__btn" href="#/control">
-          📱 Control <small>for your phone</small>
+          📱 Control <small>keep score (owner)</small>
         </a>
-      </nav>
-    </main>
-  );
-}
-
-function ControlPlaceholder() {
-  return (
-    <main className="home">
-      <h1 className="home__title">Control</h1>
-      <p className="home__sub">Scoring arrives in phase 2. For now, test the TV view.</p>
-      <nav className="home__nav">
-        <a className="home__btn home__btn--tv" href="#/display">
-          📺 Open Display
+        <a className="home__btn" href="#/station">
+          🎯 Game Station <small>helpers award tickets</small>
+        </a>
+        <a className="home__btn" href="#/prizes">
+          🎁 Prize Store <small>spend tickets</small>
         </a>
       </nav>
     </main>

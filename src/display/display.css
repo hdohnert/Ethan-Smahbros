@@ -626,6 +626,394 @@
   font-weight: 700;
 }
 
+/* ---------- Avatars (shared component) ---------- */
+
+.avatar {
+  overflow: hidden;
+}
+
+.avatar__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar--tbd {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--c-textDim);
+}
+
+.upnext__empty {
+  color: var(--c-textDim);
+  font-size: 3vh;
+}
+
+.upnext__wins {
+  margin-left: auto;
+  font-family: var(--f-display);
+  color: var(--c-lime);
+}
+
+.stage--waiting {
+  display: grid;
+  place-items: center;
+  min-height: 18vh;
+}
+
+.stage__wait {
+  font-family: var(--f-fun);
+  font-size: 6vh;
+  color: var(--c-gold);
+  text-shadow: 0 0 2vh rgba(255, 200, 61, 0.5);
+}
+
+.offline-dot {
+  position: absolute;
+  right: max(2vw, env(safe-area-inset-right));
+  bottom: max(2vh, env(safe-area-inset-bottom));
+  width: 1.6vh;
+  height: 1.6vh;
+  border-radius: 50%;
+  background: var(--c-danger);
+  box-shadow: 0 0 1vh var(--c-danger);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+/* ---------- Link screen ---------- */
+
+.start__title--small {
+  font-size: min(9vh, 5vw);
+}
+
+.start__btn--small {
+  font-size: 4vh;
+  padding: 2vh 5vh;
+  animation: none;
+}
+
+.start__btn--alt {
+  background: linear-gradient(180deg, #2fd8ff, #0a7fb0);
+  border-color: var(--c-blue);
+}
+
+.row-center {
+  display: flex;
+  gap: 3vh;
+  justify-content: center;
+}
+
+.link-input {
+  width: min(70vw, 120vh);
+  font-size: 3.4vh;
+  padding: 1.6vh 2.4vh;
+  border-radius: 1.6vh;
+  border: 0.3vh solid var(--c-panelBorder);
+  background: rgba(0, 0, 0, 0.4);
+  color: var(--c-text);
+  text-align: center;
+}
+
+.start a.start__hint {
+  color: var(--c-blue);
+}
+
+/* ---------- Bracket ---------- */
+
+.bracket {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 6vw 1fr;
+  align-items: center;
+  padding: 3vh 3vw;
+}
+
+.bracket__col {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  gap: 6vh;
+  height: 100%;
+}
+
+.bracket__col--final {
+  justify-content: center;
+  gap: 2vh;
+}
+
+.bracket__lines {
+  position: relative;
+  height: 60%;
+  border: 0.4vh solid var(--c-panelBorder);
+  border-left: 0;
+  border-radius: 0 2vh 2vh 0;
+}
+
+.bracket__lines span:first-child {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  width: 3vw;
+  border-top: 0.4vh solid var(--c-panelBorder);
+}
+
+.bracket__note {
+  text-align: center;
+  color: var(--c-textDim);
+  font-size: 3vh;
+}
+
+.series {
+  border-radius: 2vh;
+  border: 0.3vh solid var(--c-panelBorder);
+  background: rgba(0, 0, 0, 0.25);
+  padding: 1.4vh 2vh;
+}
+
+.series--live {
+  border-color: var(--c-lime);
+  box-shadow: 0 0 3vh rgba(182, 255, 59, 0.35);
+}
+
+.series--big {
+  border-color: var(--c-gold);
+  box-shadow: 0 0 4vh rgba(255, 200, 61, 0.35);
+}
+
+.series__label {
+  display: flex;
+  align-items: center;
+  gap: 1.5vh;
+  font-family: var(--f-display);
+  font-size: 3vh;
+  color: var(--c-pink);
+  margin-bottom: 1vh;
+}
+
+.series--big .series__label {
+  color: var(--c-gold);
+  font-size: 4vh;
+}
+
+.series__live {
+  font-size: 2.6vh;
+  padding: 0.3vh 1.2vh;
+  border-radius: 999px;
+  background: var(--c-lime);
+  color: var(--c-bg);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.series__row {
+  display: flex;
+  align-items: center;
+  gap: 1.5vh;
+  padding: 0.8vh 0;
+  min-width: 0;
+}
+
+.series__name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--f-fun);
+  font-size: 4.8vh;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.series--big .series__name {
+  font-size: 6vh;
+}
+
+.series__row--won .series__name {
+  color: var(--c-gold);
+}
+
+.series__row--lost {
+  opacity: 0.45;
+}
+
+.series__pips {
+  display: flex;
+  gap: 1vh;
+}
+
+.pip {
+  width: 2.6vh;
+  height: 2.6vh;
+  border-radius: 50%;
+  border: 0.35vh solid var(--c-lime);
+}
+
+.pip--on {
+  background: var(--c-lime);
+  box-shadow: 0 0 1.4vh rgba(182, 255, 59, 0.7);
+}
+
+/* ---------- Ticket Bank ---------- */
+
+.bank {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--rows), minmax(0, 1fr));
+  gap: 1.6vh 1.2vw;
+  container-type: size;
+}
+
+.bank__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6vh;
+  min-height: 0;
+  border-radius: 2vh;
+  background: var(--c-panel);
+  border: 0.25vh solid var(--c-panelBorder);
+  padding: 0.8vh;
+  overflow: hidden;
+}
+
+.bank__card .avatar {
+  width: calc(28cqh / var(--rows));
+  height: calc(28cqh / var(--rows));
+  font-size: calc(16cqh / var(--rows));
+}
+
+.bank__name {
+  max-width: 100%;
+  font-family: var(--f-fun);
+  font-size: max(3vh, calc(15cqh / var(--rows)));
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bank__bal {
+  font-family: var(--f-display);
+  font-size: max(3vh, calc(20cqh / var(--rows)));
+  line-height: 1;
+  color: var(--c-gold);
+  text-shadow: 0 0 1.5vh rgba(255, 200, 61, 0.5);
+}
+
+.bank__bal::after {
+  content: ' 🎟️';
+  font-size: 0.6em;
+}
+
+/* ---------- End-of-night card ---------- */
+
+.endcard {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4vw;
+  align-items: center;
+}
+
+.endcard__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2vh;
+  text-align: center;
+}
+
+.endcard__photo {
+  width: 42vh;
+  height: 42vh;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 40% 35%, #3b1d8f, #12073a);
+  border: 1vh solid var(--c-gold);
+  box-shadow: 0 0 6vh rgba(255, 45, 149, 0.5);
+}
+
+.endcard__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.endcard__photo .hero__monogram {
+  font-size: 24vh;
+}
+
+.endcard__thanks {
+  font-family: var(--f-display);
+  font-size: min(8vh, 4.5vw);
+  line-height: 1.05;
+  color: var(--c-gold);
+  text-shadow: 0 0 3vh rgba(255, 200, 61, 0.6);
+}
+
+.endcard__title {
+  font-family: var(--f-fun);
+  font-size: 3.6vh;
+  color: var(--c-blue);
+}
+
+.endcard__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4vh;
+}
+
+.endcard__label {
+  font-family: var(--f-display);
+  font-size: 3.4vh;
+  color: var(--c-pink);
+  margin-bottom: 1vh;
+}
+
+.endcard__champrow {
+  display: flex;
+  align-items: center;
+  gap: 2vh;
+  font-family: var(--f-fun);
+  font-size: 8vh;
+  color: var(--c-gold);
+}
+
+.endcard__at {
+  color: var(--c-textDim);
+  font-size: 3vh;
+}
+
+.endcard__top ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1vh;
+}
+
+.endcard__top li {
+  display: flex;
+  align-items: center;
+  gap: 1.5vh;
+  font-family: var(--f-fun);
+  font-size: 4vh;
+}
+
+.endcard__top b {
+  font-family: var(--f-display);
+  color: var(--c-gold);
+}
+
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+
 /* ---------- Narrower screens (iPad 4:3, 3:2) ---------- */
 
 /* Rules show one at a time on narrow screens; both fit side by side at 16:9. */

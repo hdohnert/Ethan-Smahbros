@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 
-/** Hash routing ("#/display") so GitHub Pages needs no server rewrites. */
-export function useHashRoute(): string {
-  const read = () => window.location.hash.replace(/^#\/?/, '').split('?')[0];
-  const [route, setRoute] = useState(read);
+/** Hash routing ("#/display?t=…") so GitHub Pages needs no server rewrites. Returns [route, fullHash]. */
+export function useHashRoute(): [string, string] {
+  const [hash, setHash] = useState(() => window.location.hash);
   useEffect(() => {
-    const onChange = () => setRoute(read());
+    const onChange = () => setHash(window.location.hash);
     window.addEventListener('hashchange', onChange);
     return () => window.removeEventListener('hashchange', onChange);
   }, []);
-  return route;
+  return [hash.replace(/^#\/?/, '').split('?')[0], hash];
 }

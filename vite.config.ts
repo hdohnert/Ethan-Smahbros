@@ -17,7 +17,8 @@ export default defineConfig({
         name: theme.title,
         short_name: theme.shortName,
         description: theme.subtitle,
-        start_url: './#/display',
+        // Opens the home chooser; App reopens whichever view this install was used for.
+        start_url: './',
         scope: './',
         display: 'fullscreen',
         display_override: ['fullscreen', 'standalone'],

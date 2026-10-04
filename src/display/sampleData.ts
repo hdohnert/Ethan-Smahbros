@@ -1,63 +1,53 @@
-// Static sample state for the phase 1 TV test. Phase 2 replaces this with
-// live data derived from Supabase events.
+// Sample state for previewing the TV before Supabase is set up
+// (`#/display?sample`, or automatically when no key is configured).
 
-import { rankPlayers, type PlayerStats } from '../rules/ranking';
-
-export interface Avatar {
-  emoji?: string;
-  color: string;
-}
-
-export interface BoardPlayer extends PlayerStats {
-  avatar: Avatar;
-  tickets: number;
-}
+import { replay } from '../rules/replay';
+import type { RulesEvent } from '../rules/types';
+import { DEFAULT_SETTINGS, type Player, type Snapshot } from '../data/types';
+import { buildModel, type BoardModel } from './model';
 
 const c = ['#ff2d95', '#21d4fd', '#b6ff3b', '#ffc83d', '#a66bff', '#ff8a3d'];
-
-// name, emoji, wins, losses, streak, best
-const rows: [string, string | undefined, number, number, number, number][] = [
-  ['Ethan', '🎂', 6, 1, 4, 4],
-  ['Maya', '🦄', 4, 2, 0, 3],
-  ['Leo', '🦖', 3, 1, 0, 3],
-  ['Ava', '⚡', 3, 2, 0, 2],
-  ['Noah', '🚀', 2, 1, 0, 2],
-  ['Zoe', undefined, 2, 2, 0, 1],
-  ['Kai', '🐉', 1, 1, 0, 1],
-  ['Liam', '🍕', 1, 1, 0, 1],
-  ['Mia', undefined, 1, 1, 0, 1],
-  ['Owen', '👾', 1, 1, 0, 1],
-  ['Isla', '🌈', 0, 1, 0, 0],
-  ['Jack', undefined, 0, 1, 0, 0],
-  ['Ruby', '🐱', 0, 1, 0, 0],
-  ['Finn', '🏀', 0, 1, 0, 0],
-  ['Ella', undefined, 0, 1, 0, 0],
-  ['Max', '🎮', 0, 1, 0, 0],
-  ['Lily', '🌸', 0, 0, 0, 0],
-  ['Sam', undefined, 0, 0, 0, 0],
-  ['Nora', '⭐', 0, 0, 0, 0],
-  ['Theo', '🐼', 0, 0, 0, 0],
+const names: [string, string | null][] = [
+  ['Ethan', '🎂'], ['Maya', '🦄'], ['Leo', '🦖'], ['Ava', '⚡'], ['Noah', '🚀'], ['Zoe', null], ['Kai', '🐉'],
+  ['Liam', '🍕'], ['Mia', null], ['Owen', '👾'], ['Isla', '🌈'], ['Jack', null], ['Ruby', '🐱'], ['Finn', '🏀'],
+  ['Ella', null], ['Max', '🎮'], ['Lily', '🌸'], ['Sam', null], ['Nora', '⭐'], ['Theo', '🐼'],
 ];
 
-export const samplePlayers: BoardPlayer[] = rankPlayers(
-  rows.map(([name, emoji, wins, losses, streak, bestStreak], i) => ({
+export function sampleModel(): BoardModel {
+  const players: Player[] = names.map(([name, emoji], i) => ({
     id: name.toLowerCase(),
     name,
-    avatar: { emoji, color: c[i % c.length] },
-    wins,
-    losses,
-    streak,
-    bestStreak,
-    played: wins + losses,
-    tickets: (wins + losses) * 2 + wins * 2 + (bestStreak >= 3 ? 2 : 0) + (bestStreak >= 5 ? 3 : 0),
-  })),
-);
-
-const byId = Object.fromEntries(samplePlayers.map((p) => [p.id, p]));
-
-export const sampleMatch = {
-  phase: 'King of the Hill' as const,
-  king: byId.ethan,
-  challenger: byId.lily,
-  queue: [byId.sam, byId.nora, byId.theo, byId.isla, byId.jack],
-};
+    emoji,
+    color: c[i % c.length],
+    photo_url: null,
+    photo_url_expires: null,
+    sort_order: i,
+    active: true,
+    is_demo: true,
+  }));
+  const ids = players.map((p) => p.id);
+  // Ethan wins a few, loses to Maya, Maya loses back, Ethan goes on a streak.
+  const results: [string, string][] = [
+    ['ethan', 'maya'], ['ethan', 'leo'], ['ava', 'ethan'], ['ava', 'noah'], ['zoe', 'ava'], ['kai', 'zoe'],
+    ['liam', 'kai'], ['mia', 'liam'], ['owen', 'mia'], ['isla', 'owen'], ['jack', 'isla'], ['ruby', 'jack'],
+    ['finn', 'ruby'], ['ella', 'finn'], ['max', 'ella'], ['lily', 'max'], ['sam', 'lily'], ['nora', 'sam'],
+    ['theo', 'nora'], ['maya', 'theo'], ['leo', 'maya'], ['ethan', 'leo'], ['ethan', 'ava'], ['ethan', 'noah'], ['ethan', 'zoe'],
+  ];
+  const events: RulesEvent[] = results.map(([w, l], i) => ({
+    id: i + 1, kind: 'match', phase: 'koth', winner_id: w, loser_id: l, payload: {}, undone: false,
+  }));
+  const snap: Snapshot = {
+    server_time: new Date().toISOString(),
+    settings: DEFAULT_SETTINGS,
+    has_pin: false,
+    tournament: null,
+    players,
+    events: [],
+    balances: [],
+    recent_tickets: [],
+  };
+  const t = { status: 'live' as const, starting_king_id: 'ethan', queue: ids.slice(1) };
+  const d = replay(t, players, events);
+  const balances = Object.fromEntries(ids.map((id) => [id, d.stats[id].played * 2 + d.stats[id].wins * 2 + (d.stats[id].bestStreak >= 3 ? 2 : 0)]));
+  return buildModel(snap, d, balances);
+}

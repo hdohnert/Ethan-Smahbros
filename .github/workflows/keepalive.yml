@@ -1,0 +1,24 @@
+name: Keep Supabase awake
+
+# Supabase pauses free projects after about a week without use. One tiny
+# request every 3 days keeps it active.
+on:
+  schedule:
+    - cron: '17 9 */3 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ping the database
+        run: |
+          URL=$(jq -r .url supabase.config.json)
+          KEY=$(jq -r .anonKey supabase.config.json)
+          if [ -z "$KEY" ]; then echo "anonKey is not set in supabase.config.json"; exit 1; fi
+          curl -fsS -X POST "$URL/rest/v1/rpc/ping" \
+            -H "apikey: $KEY" -H "Content-Type: application/json" -d '{}'
