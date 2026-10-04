@@ -55,8 +55,8 @@ whole database (tables, row-level security, functions).
 3. **Sign-in links:** **Authentication → URL Configuration**
    - Site URL: `https://hdohnert.github.io/Ethan-Smahbros/`
    - Redirect URLs: add `https://hdohnert.github.io/Ethan-Smahbros/**` and `http://localhost:5173/**`
-4. **Sign-in code (for the home-screen app):** **Authentication → Emails → Magic Link** template:
-   add a line such as `Your code: {{ .Token }}` so you can type the code into the installed app.
+4. **Sign-in:** use Control in Safari (not as a home-screen app) so the emailed link signs you in.
+   (Adding a code to the email needs custom SMTP on Supabase, so it's skipped.)
 5. **Claim ownership:** open `…/#/control`, sign in with your email, tap **Claim as owner**.
 6. **Lock it:** **Authentication → Sign In / Providers** → turn off **Allow new users to sign up**.
    Your account keeps working; nobody new can create one.

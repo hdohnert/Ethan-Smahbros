@@ -81,7 +81,8 @@ function SignIn() {
       {sent && (
         <>
           <p className="muted">
-            Check your email. Tap the link, or type the 6-digit code here (best when Control is installed on the home screen).
+            Check your email and tap <b>Sign in</b>. Open the link in Safari on this phone (use Control in Safari, not as a
+            home-screen app). If your email shows a code, you can type it here instead.
           </p>
           <label className="field">
             <span>Code from the email</span>
