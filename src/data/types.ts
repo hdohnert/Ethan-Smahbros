@@ -69,7 +69,7 @@ export interface LrcRound {
 }
 
 /** What the TV shows: Auto follows the night; the rest pin a screen. */
-export type TvScreen = 'auto' | 'bank' | 'pickup' | 'thanks';
+export type TvScreen = 'auto' | 'bank' | 'pickup' | 'prizes' | 'thanks';
 
 export interface Settings {
   title: string;
@@ -108,11 +108,25 @@ export interface Settings {
   /** Rotate to the Ticket Bank for 15 s every 3 min between matches. */
   autoRotateBank: boolean;
   prizeStoreOpen: boolean;
+  /** Price board only: show prices, kids pay with physical tickets. Deduct in app: the old buy flow. */
+  prizeStoreMode: 'board' | 'deduct';
   prizes: Prize[];
+  /** Which default prize list the saved one came from (absent = the original six). */
+  prizesVersion?: number;
   sound: boolean;
   /** Id of the real tournament to return to when demo mode ends. */
   demoReturnTo: string | null;
 }
+
+export const DEFAULT_PRIZES: Prize[] = [
+  { name: 'Small', cost: 10 },
+  { name: 'Medium', cost: 20 },
+  { name: 'Large', cost: 40 },
+  { name: 'Top shelf', cost: 75 },
+];
+
+/** Bumped when DEFAULT_PRIZES changes, so Control rewrites the saved list once. */
+export const PRIZES_VERSION = 2;
 
 export const DEFAULT_SETTINGS: Settings = {
   title: theme.title,
@@ -139,14 +153,8 @@ export const DEFAULT_SETTINGS: Settings = {
   tvScreen: 'auto',
   autoRotateBank: true,
   prizeStoreOpen: false,
-  prizes: [
-    { name: 'Sticker', cost: 5 },
-    { name: 'Candy', cost: 5 },
-    { name: 'Glow stick', cost: 10 },
-    { name: 'Slime', cost: 15 },
-    { name: 'Large prize', cost: 25 },
-    { name: 'Top shelf', cost: 40 },
-  ],
+  prizeStoreMode: 'board',
+  prizes: DEFAULT_PRIZES,
   sound: false,
   demoReturnTo: null,
 };

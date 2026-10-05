@@ -67,12 +67,20 @@ function Store({ open, prizes, kids, pin, reload }: { open: boolean; prizes: Pri
   const { busy, run } = useAction();
   const kid = kids.find((k) => k.id === kidId) ?? null;
 
+  // Price board (the default): prices only, kids pay with physical tickets.
   if (!open) {
     return (
       <div className="center stack">
         <h1 className="c-title">🎁 Prize Store</h1>
-        <p>The Prize Store opens at the end of the night.</p>
-        <p className="muted small">(Open it from Control → Tickets.)</p>
+        <div className="price-board">
+          {[...prizes].sort((a, b) => a.cost - b.cost).map((p) => (
+            <div key={p.name} className="price-tag">
+              <span className="price-tag__name">{p.name}</span>
+              <span className="price-tag__cost">{p.cost} 🎟️</span>
+            </div>
+          ))}
+        </div>
+        <p className="muted small">Pay with your tickets at the prize table.</p>
       </div>
     );
   }

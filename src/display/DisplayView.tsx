@@ -13,6 +13,7 @@ import { TicketBank } from './TicketBank';
 import { HeroScreen } from './HeroScreen';
 import { RulesScreen } from './RulesScreen';
 import { LrcScreen } from './LrcScreen';
+import { PrizeScreen } from './PrizeScreen';
 import { ATTRACT_AFTER_MS, ATTRACT_SLIDE_MS } from '../effects/config';
 import { Kickoff, MomentOverlay } from '../effects/Overlays';
 import { useEffectsEngine } from '../effects/useEffectsEngine';
@@ -113,6 +114,7 @@ function Show({
   else if (view === 'end') content = <EndCard m={model} />;
   else if (view === 'bank') content = <TicketBank m={model} />;
   else if (view === 'pickup') content = <TicketBank m={model} pickup />;
+  else if (view === 'prizes') content = <PrizeScreen m={model} />;
   else if (view === 'hero') content = <HeroScreen m={model} />;
   else if (view === 'rules') content = <RulesScreen m={model} />;
   else if (view === 'lrc') content = <LrcScreen m={model} />;
@@ -138,7 +140,7 @@ function Show({
   );
 }
 
-type View = 'board' | 'bank' | 'end' | 'hero' | 'rules' | 'lrc' | 'pickup';
+type View = 'board' | 'bank' | 'end' | 'hero' | 'rules' | 'lrc' | 'pickup' | 'prizes';
 const ATTRACT: View[] = ['hero', 'board', 'bank', 'rules'];
 
 /**
@@ -175,8 +177,11 @@ function useView(model: BoardModel | null): View {
   const pinned = model.settings.tvScreen;
   if (pinned === 'bank' || model.settings.showTicketBank) return 'bank';
   if (pinned === 'pickup') return 'pickup';
+  if (pinned === 'prizes') return 'prizes';
   if (pinned === 'thanks') return 'end';
   if (model.settings.lrc && model.settings.lrc.tournamentId === model.tournamentId) return 'lrc';
+  // Payout time: cycle the price board, who still needs tickets, and the thanks card.
+  if (model.settings.ticketsFrozen) return (['prizes', 'pickup', 'end'] as const)[Math.floor(now / ATTRACT_SLIDE_MS) % 3];
   if (model.status === 'finished') return 'end';
   const quiet = now - lastChange;
   if (quiet >= ATTRACT_AFTER_MS && model.status !== 'playoff') {

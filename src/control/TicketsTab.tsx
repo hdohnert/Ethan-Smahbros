@@ -87,10 +87,22 @@ export function TicketsTab({ live }: { live: Live }) {
 
       <section className="card stack">
         <h2 className="card__title">🎁 Prize Store</h2>
-        <Toggle label={s.prizeStoreOpen ? 'Open: kids can spend tickets' : 'Closed'} checked={s.prizeStoreOpen} onChange={(v) => set({ prizeStoreOpen: v })} />
+        <div className="seg">
+          <button className={`seg__btn${s.prizeStoreMode !== 'deduct' ? ' seg__btn--on' : ''}`} disabled={busy} onClick={() => set({ prizeStoreMode: 'board', prizeStoreOpen: false })}>
+            Price board only
+          </button>
+          <button className={`seg__btn${s.prizeStoreMode === 'deduct' ? ' seg__btn--on' : ''}`} disabled={busy} onClick={() => set({ prizeStoreMode: 'deduct' })}>
+            Deduct in app
+          </button>
+        </div>
+        {s.prizeStoreMode === 'deduct' ? (
+          <Toggle label={s.prizeStoreOpen ? 'Open: kids can spend tickets in the app' : 'Closed'} checked={s.prizeStoreOpen} onChange={(v) => set({ prizeStoreOpen: v })} />
+        ) : (
+          <p className="muted small">Kids pay with their physical tickets. The Prize Store page and the TV show prices only; nothing is deducted in the app.</p>
+        )}
         <PrizeEditor prizes={s.prizes} onSave={(prizes) => set({ prizes })} />
         <LinkRow url={appUrl('prizes')} onCopy={async (u) => toast((await copyText(u)) ? 'Prize Store link copied' : 'Copy failed')} />
-        <p className="muted small">Open the Prize Store link here (signed in) or on a helper phone with the station PIN.</p>
+        <p className="muted small">The Prize Store page works here (signed in) or on a helper phone with the station PIN.</p>
       </section>
 
       <section className="card">

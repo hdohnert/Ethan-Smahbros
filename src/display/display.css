@@ -1440,6 +1440,61 @@
   color: var(--c-textDim);
 }
 
+/* ---------- Prize Store (TV) ---------- */
+
+.prizes {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  gap: 2.4vw;
+  align-items: center;
+  padding: 2vh 0;
+}
+
+.prizes__tag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1vh;
+  height: 80%;
+  border-radius: 3vh;
+  border: 0.6vh solid var(--neon);
+  background: var(--c-panel);
+  box-shadow:
+    0 0 3vh color-mix(in srgb, var(--neon) 60%, transparent),
+    inset 0 0 3vh color-mix(in srgb, var(--neon) 25%, transparent);
+  animation: tag-glow 2.4s ease-in-out infinite alternate;
+}
+
+.prizes__name {
+  font-family: var(--f-fun);
+  font-size: 6vh;
+  letter-spacing: 0.03em;
+  text-align: center;
+}
+
+.prizes__cost {
+  font-family: var(--f-display);
+  font-size: 18vh;
+  line-height: 1;
+  color: var(--neon);
+  text-shadow: 0 0 4vh var(--neon);
+}
+
+.prizes__unit {
+  font-family: var(--f-display);
+  font-size: 3.4vh;
+  color: var(--c-textDim);
+}
+
+@keyframes tag-glow {
+  to {
+    opacity: 0.85;
+  }
+}
+
 /* ---------- Narrower screens (iPad 4:3, 3:2) ---------- */
 
 /* Rules show one at a time on narrow screens; both fit side by side at 16:9. */
@@ -1545,7 +1600,8 @@
     display: none;
   }
   .hero-screen__ring,
-  .hero-screen__name {
+  .hero-screen__name,
+  .prizes__tag {
     animation: none;
   }
   .display--shake .board,

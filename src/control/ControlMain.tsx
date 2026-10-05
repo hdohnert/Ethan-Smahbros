@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { newTournament, refreshPhotoLinks, saveSettings, undoLast, demoStep } from '../data/api';
 import { DEFAULT_TICKETS, TICKET_SCALE_VERSION } from '../rules/tickets';
+import { DEFAULT_PRIZES, PRIZES_VERSION } from '../data/types';
 import { useSnapshot } from '../data/useSnapshot';
 import type { Snapshot } from '../data/types';
 import { useAction } from '../ui/Toast';
@@ -36,12 +37,19 @@ export function ControlMain({ email }: { email: string }) {
     }
   }, [snap, live]);
 
-  // One-time update of saved ticket amounts to the current defaults.
+  // One-time update of saved ticket amounts and prize list to the current defaults.
   const migrating = useRef(false);
   useEffect(() => {
-    if (snap && (snap.settings.ticketsVersion ?? 1) < TICKET_SCALE_VERSION && !migrating.current) {
+    const s = snap?.settings;
+    const oldTickets = s && (s.ticketsVersion ?? 1) < TICKET_SCALE_VERSION;
+    const oldPrizes = s && (s.prizesVersion ?? 1) < PRIZES_VERSION;
+    if (snap && (oldTickets || oldPrizes) && !migrating.current) {
       migrating.current = true;
-      void saveSettings(snap, { tickets: DEFAULT_TICKETS, ticketsVersion: TICKET_SCALE_VERSION })
+      void saveSettings(snap, {
+        ...(oldTickets ? { tickets: DEFAULT_TICKETS, ticketsVersion: TICKET_SCALE_VERSION } : {}),
+        // New price list; price board mode keeps the in-app store closed.
+        ...(oldPrizes ? { prizes: DEFAULT_PRIZES, prizesVersion: PRIZES_VERSION, prizeStoreMode: 'board' as const, prizeStoreOpen: false } : {}),
+      })
         .then(() => live.refresh())
         .catch(() => (migrating.current = false));
     }

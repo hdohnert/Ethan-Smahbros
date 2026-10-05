@@ -1327,3 +1327,34 @@
   margin: max(8px, env(safe-area-inset-top)) 16px 0;
   text-align: center;
 }
+
+/* ---------- price board (phone) ---------- */
+
+.price-board {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.price-tag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 10px;
+  border-radius: 18px;
+  border: 2px solid var(--c-pink);
+  background: var(--c-panel);
+  box-shadow: 0 0 18px rgba(255, 45, 149, 0.3);
+}
+
+.price-tag__name {
+  font-family: var(--f-fun);
+  font-size: 24px;
+}
+
+.price-tag__cost {
+  font-family: var(--f-display);
+  font-size: 26px;
+  color: var(--c-gold);
+}
