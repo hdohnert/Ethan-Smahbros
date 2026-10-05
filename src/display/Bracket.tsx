@@ -11,8 +11,8 @@ export function Bracket({ m, fx }: { m: BoardModel; fx?: EffectsState }) {
   return (
     <section className="panel bracket">
       <motion.div className="bracket__col" initial={{ opacity: 0, x: '-6vw' }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }}>
-        <SeriesBox s={b.semi1} label={`Semifinal · ${seriesFormat(b.semi1.bestOf)}`} sub="#1 vs #4" live={m.currentSeries === 'semi1'} fx={fx} />
-        <SeriesBox s={b.semi2} label={`Semifinal · ${seriesFormat(b.semi2.bestOf)}`} sub="#2 vs #3" live={m.currentSeries === 'semi2'} fx={fx} />
+        <SeriesBox s={b.semi1} label="Semifinal 1" sub={`${seriesFormat(b.semi1.bestOf)} · #1 vs #4`} live={m.currentSeries === 'semi1'} fx={fx} />
+        <SeriesBox s={b.semi2} label="Semifinal 2" sub={`${seriesFormat(b.semi2.bestOf)} · #2 vs #3`} live={m.currentSeries === 'semi2'} fx={fx} />
       </motion.div>
       <motion.div className="bracket__lines" aria-hidden initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5, duration: 0.4 }}>
         <span />
@@ -24,7 +24,7 @@ export function Bracket({ m, fx }: { m: BoardModel; fx?: EffectsState }) {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.8, duration: 0.5 }}
       >
-        <SeriesBox s={b.final} label={`🏆 Final · ${seriesFormat(b.final.bestOf)}`} live={m.currentSeries === 'final'} big fx={fx} slideIn />
+        <SeriesBox s={b.final} label="🏆 Final" sub={seriesFormat(b.final.bestOf)} live={m.currentSeries === 'final'} big fx={fx} slideIn />
         <div className="bracket__note">{b.final.need > 1 ? `First to ${b.final.need} wins is the champion` : 'One game for the crown'}</div>
       </motion.div>
     </section>
@@ -52,10 +52,10 @@ function SeriesBox({
   return (
     <div className={`series${live ? ' series--live' : ''}${big ? ' series--big' : ''}`}>
       <div className="series__label">
-        {label}
-        {sub && <span className="series__sub">{sub}</span>}
+        <span className="series__title">{label}</span>
         {live && <span className="series__live">NOW</span>}
       </div>
+      {sub && <div className="series__sub">{sub}</div>}
       <SeriesRow need={s.need} p={s.a} wins={s.winsA} won={!!s.winner && s.winner.id === s.a?.id} lost={!!s.winner && s.winner.id !== s.a?.id} ko={ko(s.a)} slideIn={slideIn} from={-1} />
       <SeriesRow need={s.need} p={s.b} wins={s.winsB} won={!!s.winner && s.winner.id === s.b?.id} lost={!!s.winner && s.winner.id !== s.b?.id} ko={ko(s.b)} slideIn={slideIn} from={1} />
     </div>
