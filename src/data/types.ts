@@ -73,6 +73,14 @@ export interface Settings {
   tickets: TicketScale;
   /** Which DEFAULT_TICKETS the saved amounts came from (absent = the original 2/2/2/3/3/5/5/10). */
   ticketsVersion?: number;
+  /** Physical tickets available for the whole night; awards can never go past it. */
+  ticketBudget: number;
+  /** Locks every award and undo while tickets are being handed out. */
+  ticketsFrozen: boolean;
+  /** Main session length in minutes (used by the budget projection and the session clock). */
+  sessionMinutes: number;
+  /** When the main session of a tournament started, set by Start Tournament. */
+  sessionStart: { tournamentId: string; at: string } | null;
   /** Control's "show Ticket Bank on the TV" switch. */
   showTicketBank: boolean;
   /** Rotate to the Ticket Bank for 15 s every 3 min between matches. */
@@ -94,6 +102,10 @@ export const DEFAULT_SETTINGS: Settings = {
   heroPhotoExpires: null,
   kingsRest: true,
   matchFormat: '4-player',
+  ticketBudget: 1000,
+  ticketsFrozen: false,
+  sessionMinutes: 75,
+  sessionStart: null,
   semiBestOf: 1,
   finalBestOf: 3,
   tickets: DEFAULT_TICKETS,
@@ -141,5 +153,7 @@ export interface Snapshot {
   players: Player[];
   events: MatchEvent[];
   balances: { player_id: string; balance: number; earned?: number }[];
+  /** Kids whose physical tickets have been handed out (payout checklist). */
+  paid?: string[];
   recent_tickets: TicketEvent[];
 }

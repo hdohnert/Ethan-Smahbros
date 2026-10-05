@@ -86,9 +86,21 @@ create table if not exists public.ticket_events (
   undone boolean not null default false,
   created_at timestamptz not null default now()
 );
+-- Added later: groups awards made together (Left Right Center round, everyone-bonus) so they can be undone as one.
+alter table public.ticket_events add column if not exists batch_id uuid;
 create index if not exists ticket_events_bank_idx on public.ticket_events (bank_id, player_id);
+create index if not exists ticket_events_batch_idx on public.ticket_events (batch_id);
 create index if not exists ticket_events_match_idx on public.ticket_events (match_event_id);
 create index if not exists ticket_events_device_idx on public.ticket_events (device_id, created_at desc);
+
+-- Payout checklist: which kids have been handed their physical tickets.
+create table if not exists public.payout_marks (
+  bank_id uuid not null,
+  player_id uuid not null references public.players (id) on delete cascade,
+  paid boolean not null default true,
+  updated_at timestamptz not null default now(),
+  primary key (bank_id, player_id)
+);
 
 create table if not exists public.display_tokens (
   token text primary key check (char_length(token) >= 24),
@@ -118,6 +130,7 @@ alter table public.ticket_events enable row level security;
 alter table public.display_tokens enable row level security;
 alter table public.pin_failures enable row level security;
 alter table public.station_secret enable row level security;
+alter table public.payout_marks enable row level security;
 
 create or replace function public.is_owner()
 returns boolean
@@ -127,7 +140,7 @@ as $$ select exists (select 1 from public.admins where user_id = auth.uid()) $$;
 do $$
 declare t text;
 begin
-  foreach t in array array['app_state', 'players', 'tournaments', 'match_events', 'ticket_events', 'display_tokens'] loop
+  foreach t in array array['app_state', 'players', 'tournaments', 'match_events', 'ticket_events', 'display_tokens', 'payout_marks'] loop
     execute format('drop policy if exists owner_all on public.%I', t);
     execute format(
       'create policy owner_all on public.%I for all to authenticated using (public.is_owner()) with check (public.is_owner())', t);
@@ -166,6 +179,63 @@ begin
   insert into public.admins (user_id) values (auth.uid());
   return true;
 end $$;
+
+-- ---------------------------------------------------------------- ticket budget and freeze
+
+-- Total physical tickets for the night (Settings → Tickets available), default 1000.
+create or replace function public.ticket_budget()
+returns int
+language sql stable security definer set search_path = ''
+as $$ select coalesce(nullif(settings->>'ticketBudget', '')::int, 1000) from public.app_state where id = 1 $$;
+
+-- Freeze for payout: no awards or undos while true.
+create or replace function public.tickets_frozen()
+returns boolean
+language sql stable security definer set search_path = ''
+as $$ select coalesce((settings->>'ticketsFrozen')::boolean, false) from public.app_state where id = 1 $$;
+
+-- Tickets handed out so far in a bank: awards only. Prize deductions don't count
+-- and don't give tickets back to the budget.
+create or replace function public.bank_issued(p_bank uuid)
+returns int
+language sql stable security definer set search_path = ''
+as $$ select coalesce(sum(amount), 0)::int from public.ticket_events where bank_id = p_bank and amount > 0 and not undone $$;
+
+-- Every ticket write passes through here, whoever makes it (Control, a station,
+-- a match result), so the budget and the freeze can't be bypassed.
+create or replace function public.guard_ticket_events()
+returns trigger
+language plpgsql security definer set search_path = ''
+as $$
+declare
+  counts_now boolean;
+  counted_before boolean;
+  left_over int;
+begin
+  counts_now := new.amount > 0 and not new.undone;
+  counted_before := tg_op = 'UPDATE' and old.amount > 0 and not old.undone;
+  if public.tickets_frozen() then
+    if tg_op = 'INSERT' and new.amount > 0 then
+      raise exception 'Tickets are frozen for payout' using errcode = 'P0001';
+    end if;
+    if tg_op = 'UPDATE' and new.undone is distinct from old.undone then
+      raise exception 'Tickets are frozen for payout' using errcode = 'P0001';
+    end if;
+  end if;
+  if counts_now and not counted_before then
+    -- One writer per bank at a time, so two phones can't both squeeze past the limit.
+    perform pg_advisory_xact_lock(hashtextextended(new.bank_id::text, 1));
+    left_over := public.ticket_budget() - public.bank_issued(new.bank_id);
+    if new.amount > left_over then
+      raise exception 'Over the ticket budget: only % left', greatest(left_over, 0) using errcode = 'P0001';
+    end if;
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists guard_ticket_events on public.ticket_events;
+create trigger guard_ticket_events before insert or update on public.ticket_events
+  for each row execute function public.guard_ticket_events();
 
 -- ---------------------------------------------------------------- snapshot (Control + Display)
 
@@ -212,6 +282,9 @@ begin
       select jsonb_agg(to_jsonb(e) order by e.id)
       from public.match_events e where e.tournament_id = t.id), '[]'::jsonb),
     'balances', case when t.id is null then '[]'::jsonb else public.ticket_bank_balances(t.ticket_bank_id) end,
+    'paid', coalesce((
+      select jsonb_agg(m.player_id) from public.payout_marks m
+      where m.bank_id = t.ticket_bank_id and m.paid), '[]'::jsonb),
     'recent_tickets', coalesce((
       select jsonb_agg(to_jsonb(x) order by x.created_at desc)
       from (
@@ -244,8 +317,16 @@ as $$
 declare
   t public.tournaments;
   new_id bigint;
+  x jsonb;
+  amt int;
+  left_over int;
+  wanted int := 0;
+  paid int := 0;
 begin
   if not public.is_owner() then raise exception 'not allowed' using errcode = '42501'; end if;
+  if public.tickets_frozen() and jsonb_array_length(coalesce(p_tickets, '[]'::jsonb)) > 0 then
+    return jsonb_build_object('ok', false, 'error', 'Tickets are frozen for payout. Unfreeze them first.');
+  end if;
   select * into t from public.tournaments where id = p_tournament for update;
   if t.id is null then raise exception 'no such tournament'; end if;
   if t.version <> p_version then
@@ -256,12 +337,23 @@ begin
   values (p_tournament, p_kind, p_phase, p_winner, p_loser, coalesce(p_payload, '{}'::jsonb))
   returning id into new_id;
 
-  insert into public.ticket_events (bank_id, player_id, amount, reason, source, match_event_id)
-  select t.ticket_bank_id, (x->>'player_id')::uuid, (x->>'amount')::int, left(coalesce(x->>'reason', ''), 80), 'Tournament', new_id
-  from jsonb_array_elements(coalesce(p_tickets, '[]'::jsonb)) x;
+  -- The result always counts; its tickets are paid only up to what's left in the budget.
+  perform pg_advisory_xact_lock(hashtextextended(t.ticket_bank_id::text, 1));
+  left_over := public.ticket_budget() - public.bank_issued(t.ticket_bank_id);
+  for x in select * from jsonb_array_elements(coalesce(p_tickets, '[]'::jsonb)) loop
+    amt := (x->>'amount')::int;
+    wanted := wanted + amt;
+    amt := least(amt, greatest(left_over, 0));
+    if amt > 0 then
+      insert into public.ticket_events (bank_id, player_id, amount, reason, source, match_event_id)
+      values (t.ticket_bank_id, (x->>'player_id')::uuid, amt, left(coalesce(x->>'reason', ''), 80), 'Tournament', new_id);
+      left_over := left_over - amt;
+      paid := paid + amt;
+    end if;
+  end loop;
 
   update public.tournaments set version = version + 1 where id = p_tournament;
-  return jsonb_build_object('ok', true, 'id', new_id, 'version', t.version + 1);
+  return jsonb_build_object('ok', true, 'id', new_id, 'version', t.version + 1, 'wanted', wanted, 'paid', paid);
 end $$;
 
 -- Undoes the latest event that still counts, and every ticket it paid.
@@ -274,6 +366,9 @@ declare
   e public.match_events;
 begin
   if not public.is_owner() then raise exception 'not allowed' using errcode = '42501'; end if;
+  if public.tickets_frozen() then
+    return jsonb_build_object('ok', false, 'error', 'Tickets are frozen for payout. Unfreeze them first.');
+  end if;
   select * into t from public.tournaments where id = p_tournament for update;
   if t.version <> p_version then
     return jsonb_build_object('ok', false, 'error', 'stale');
@@ -350,6 +445,8 @@ begin
   return jsonb_build_object(
     'ok', true,
     'prize_store_open', coalesce((st.settings->>'prizeStoreOpen')::boolean, false),
+    'frozen', public.tickets_frozen(),
+    'remaining', public.ticket_budget() - public.bank_issued(b.bank_id),
     'prizes', coalesce(st.settings->'prizes', '[]'::jsonb),
     'title', st.settings->>'title',
     'players', coalesce((
@@ -381,6 +478,14 @@ begin
   if not exists (select 1 from public.players where id = p_player and is_demo = b.is_demo) then
     return jsonb_build_object('ok', false, 'error', 'Unknown player');
   end if;
+  if public.tickets_frozen() then
+    return jsonb_build_object('ok', false, 'error', 'Tickets are frozen for payout');
+  end if;
+  perform pg_advisory_xact_lock(hashtextextended(b.bank_id::text, 1));
+  if p_amount > public.ticket_budget() - public.bank_issued(b.bank_id) then
+    return jsonb_build_object('ok', false, 'error',
+      format('Ticket budget reached: only %s left', greatest(public.ticket_budget() - public.bank_issued(b.bank_id), 0)));
+  end if;
   insert into public.ticket_events (bank_id, player_id, amount, reason, source, station, device_id)
   values (b.bank_id, p_player, p_amount, left(trim(p_station), 40), left(trim(p_station), 40), left(trim(p_station), 40), left(p_device, 64))
   returning id into new_id;
@@ -400,6 +505,7 @@ begin
   err := public.check_station_pin(p_pin);
   if err is not null then return jsonb_build_object('ok', false, 'error', err); end if;
   if coalesce(p_device, '') = '' then return jsonb_build_object('ok', false, 'error', 'Nothing to undo'); end if;
+  if public.tickets_frozen() then return jsonb_build_object('ok', false, 'error', 'Tickets are frozen for payout'); end if;
   select * into b from public.current_bank();
   select * into e from public.ticket_events
   where device_id = p_device and bank_id = b.bank_id and amount > 0
@@ -465,7 +571,8 @@ grant execute on function
   public.station_undo(text, text), public.prize_purchase(text, text, uuid, int, text), public.ping()
   to anon, authenticated;
 -- Internal helpers stay private.
-revoke execute on function public.check_station_pin(text), public.current_bank(), public.ticket_bank_balances(uuid)
+revoke execute on function public.check_station_pin(text), public.current_bank(), public.ticket_bank_balances(uuid),
+  public.ticket_budget(), public.tickets_frozen(), public.bank_issued(uuid), public.guard_ticket_events()
   from public, anon, authenticated;
 
 -- ---------------------------------------------------------------- live updates
@@ -474,7 +581,7 @@ revoke execute on function public.check_station_pin(text), public.current_bank()
 do $$
 declare t text;
 begin
-  foreach t in array array['app_state', 'players', 'tournaments', 'match_events', 'ticket_events'] loop
+  foreach t in array array['app_state', 'players', 'tournaments', 'match_events', 'ticket_events', 'payout_marks'] loop
     if not exists (
       select 1 from pg_publication_tables
       where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t
@@ -506,7 +613,7 @@ revoke execute on function public.notify_displays() from public, anon, authentic
 do $$
 declare t text;
 begin
-  foreach t in array array['app_state', 'players', 'tournaments', 'match_events', 'ticket_events'] loop
+  foreach t in array array['app_state', 'players', 'tournaments', 'match_events', 'ticket_events', 'payout_marks'] loop
     execute format('drop trigger if exists notify_displays on public.%I', t);
     execute format(
       'create trigger notify_displays after insert or update or delete on public.%I for each statement execute function public.notify_displays()', t);

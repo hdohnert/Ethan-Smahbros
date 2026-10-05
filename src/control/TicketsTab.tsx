@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { awardEveryone, awardTickets, resetTicketBank, saveSettings, setStationPin, undoTicket } from '../data/api';
 import { Confirm } from '../ui/Confirm';
+import { BudgetDetails, useBudget } from './Budget';
 import type { Prize } from '../data/types';
 import type { Live } from '../data/useSnapshot';
 import { Avatar } from '../ui/Avatar';
@@ -20,6 +21,8 @@ export function TicketsTab({ live }: { live: Live }) {
 
   return (
     <div className="stack">
+      <BudgetCard live={live} />
+
       <section className="card stack">
         <h2 className="card__title">📺 Ticket Bank on the TV</h2>
         <Toggle label="Show Ticket Bank now" checked={s.showTicketBank} onChange={(v) => set({ showTicketBank: v })} />
@@ -101,7 +104,7 @@ export function TicketsTab({ live }: { live: Live }) {
                 <b>{name(t.player_id)}</b> <span className="muted small">{t.reason}</span>
               </span>
               {!t.undone && (
-                <button className="btn btn--small" disabled={busy} onClick={() => run(() => undoTicket(t.id).then(live.refresh), 'Tickets undone')}>
+                <button className="btn btn--small" disabled={busy} onClick={() => run(() => undoTicket(t.id, snap).then(live.refresh), 'Tickets undone')}>
                   Undo
                 </button>
               )}
@@ -240,6 +243,38 @@ function ResetBankCard({ live }: { live: Live }) {
           <p className="small">Good for clearing out test tickets before the party. Players and match scores stay.</p>
         </Confirm>
       )}
+    </section>
+  );
+}
+
+/** The night's ticket budget: given, left, and what the tournament will still pay. */
+function BudgetCard({ live }: { live: Live }) {
+  const p = useBudget(live);
+  const s = live.snap!.settings;
+  if (!p) return null;
+  return (
+    <section className={`card stack budget-card budget-card--${p.level}`}>
+      <h2 className="card__title">🎟️ Ticket budget</h2>
+      <div className="budget-card__nums">
+        <div>
+          <b>{p.issued}</b>
+          <span>given</span>
+        </div>
+        <div>
+          <b>{p.remaining}</b>
+          <span>left of {s.ticketBudget}</span>
+        </div>
+        <div>
+          <b>~{p.expectedMore}</b>
+          <span>still to come</span>
+        </div>
+      </div>
+      {p.suggestion && <p className="budget-card__warn">⚠️ {p.suggestion}</p>}
+      <BudgetDetails p={p} />
+      <p className="muted small">
+        No award can ever go past {s.ticketBudget}, from this phone or a helper's. Undo gives tickets back; prizes don't. Change
+        "Tickets available" in Settings.
+      </p>
     </section>
   );
 }

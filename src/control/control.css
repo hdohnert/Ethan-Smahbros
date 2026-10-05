@@ -1054,3 +1054,109 @@
   background: linear-gradient(180deg, #ff4fa8, #c3126b);
   color: #fff;
 }
+
+/* ---------- ticket budget strip ---------- */
+
+.budget {
+  position: sticky;
+  top: calc(max(10px, env(safe-area-inset-top)) + 58px);
+  z-index: 4;
+  background: rgba(20, 14, 52, 0.96);
+  border-bottom: 1px solid var(--c-panelBorder);
+  font-size: 14px;
+}
+
+.budget__row {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px max(16px, env(safe-area-inset-right)) 8px max(16px, env(safe-area-inset-left));
+  background: none;
+  border: 0;
+  color: var(--c-text);
+  font: inherit;
+  text-align: left;
+}
+
+.budget__row b {
+  color: var(--c-gold);
+}
+
+.budget--warn {
+  background: rgba(80, 64, 0, 0.96);
+}
+
+.budget--over {
+  background: rgba(90, 16, 32, 0.97);
+}
+
+.budget__msg {
+  padding: 0 16px 8px;
+  font-weight: 600;
+  color: #ffe08a;
+}
+
+.budget--over .budget__msg {
+  color: #ffd0d8;
+}
+
+.budget__msg--frozen {
+  color: var(--c-blue);
+}
+
+.budget__parts {
+  list-style: none;
+  margin: 0;
+  padding: 0 16px 10px;
+}
+
+.budget__parts li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  border-top: 1px solid rgba(120, 100, 255, 0.15);
+  color: var(--c-textDim);
+}
+
+.budget__parts b {
+  color: var(--c-text);
+}
+
+.budget__total b {
+  color: var(--c-gold);
+}
+
+.budget-card__nums {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  text-align: center;
+}
+
+.budget-card__nums b {
+  display: block;
+  font-family: var(--f-display);
+  font-size: 24px;
+  color: var(--c-gold);
+}
+
+.budget-card__nums span {
+  font-size: 13px;
+  color: var(--c-textDim);
+}
+
+.budget-card .budget__parts {
+  padding: 0;
+}
+
+.budget-card--over {
+  border-color: var(--c-danger);
+}
+
+.budget-card__warn {
+  margin: 0;
+  color: #ffd0d8;
+  font-weight: 600;
+}

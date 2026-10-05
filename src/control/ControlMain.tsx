@@ -5,6 +5,7 @@ import { useSnapshot } from '../data/useSnapshot';
 import type { Snapshot } from '../data/types';
 import { useAction } from '../ui/Toast';
 import { describeEvent } from './describe';
+import { BudgetBar, useBudget } from './Budget';
 import { MatchTab } from './MatchTab';
 import { PlayersTab } from './PlayersTab';
 import { SettingsTab } from './SettingsTab';
@@ -60,6 +61,7 @@ export function ControlMain({ email }: { email: string }) {
   }, []);
 
   const demo = useDemo(snap, live.refresh);
+  const budget = useBudget(live);
 
   if (!snap || !derived || !snap.tournament) {
     return <div className="center muted">{live.error ? `Can't reach the database: ${live.error}` : 'Loading…'}</div>;
@@ -81,10 +83,11 @@ export function ControlMain({ email }: { email: string }) {
           {snap.tournament.is_demo && <span className="pill pill--demo">DEMO</span>}
           {!online && <span className="pill pill--offline">Offline · retrying</span>}
         </div>
-        <button className="btn btn--undo" onClick={undo} disabled={!canUndo || busy}>
+        <button className="btn btn--undo" onClick={undo} disabled={!canUndo || busy || snap.settings.ticketsFrozen}>
           ↶ Undo
         </button>
       </header>
+      {budget && <BudgetBar p={budget} budget={snap.settings.ticketBudget} frozen={snap.settings.ticketsFrozen} />}
 
       <main className="c-body">
         {tab === 'match' && <MatchTab live={live} demo={demo} />}

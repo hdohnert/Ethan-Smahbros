@@ -21,7 +21,7 @@ const SCALE_LABELS: [keyof TicketScale, string][] = [
 
 // Only these fields are edited by the form, so saving never overwrites
 // toggles or photo links that changed elsewhere in the meantime.
-const EDITABLE = ['title', 'subtitle', 'birthdayName', 'age', 'tickets', 'kingsRest'] as const;
+const EDITABLE = ['title', 'subtitle', 'birthdayName', 'age', 'tickets', 'kingsRest', 'ticketBudget'] as const;
 type Editable = Pick<Settings, (typeof EDITABLE)[number]>;
 const pickEditable = (s: Settings): Editable =>
   Object.fromEntries(EDITABLE.map((k) => [k, s[k]])) as unknown as Editable;
@@ -89,6 +89,19 @@ export function SettingsTab({ live, email }: { live: Live; email: string }) {
 
       <section className="card stack">
         <h2 className="card__title">🎟️ Ticket scale</h2>
+        <label className="toggle-row">
+          <span>
+            <b>Tickets available</b> (physical tickets for the whole night)
+          </span>
+          <input
+            className="num"
+            type="number"
+            min={0}
+            max={100000}
+            value={form.ticketBudget}
+            onChange={(e) => setForm({ ...form, ticketBudget: Math.max(0, Number(e.target.value) || 0) })}
+          />
+        </label>
         {SCALE_LABELS.map(([key, label]) => (
           <label key={key} className="toggle-row">
             <span>{label}</span>

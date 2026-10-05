@@ -41,7 +41,7 @@ function friendly(e: { message: string; code?: string } | null): string {
   return e.message;
 }
 
-type RpcResult = { ok: boolean; error?: string; id?: number; version?: number; event?: RulesEvent };
+type RpcResult = { ok: boolean; error?: string; id?: number; version?: number; event?: RulesEvent; wanted?: number; paid?: number };
 
 async function rpcOk(name: string, args: Record<string, unknown>): Promise<RpcResult> {
   const res = await withRetry<RpcResult>(() => supabase.rpc(name, args));
@@ -80,8 +80,8 @@ export async function recordKoth(snap: Snapshot, d: Derived, winner: string) {
   const losers = matchPlayers(d).filter((id) => id !== winner);
   const { awards, rest } = kothResult(d, winner, losers, snap.settings.tickets, snap.settings.kingsRest);
   const payload = { format: d.format, ...(rest ? { rest: true } : {}), ...(losers.length > 1 ? { losers } : {}) };
-  await record(t, 'match', { phase: 'koth', winner, loser: losers[0], payload, tickets: awards });
-  return { awards, rest };
+  const res = await record(t, 'match', { phase: 'koth', winner, loser: losers[0], payload, tickets: awards });
+  return { awards, rest, wanted: res.wanted ?? 0, paid: res.paid ?? 0 };
 }
 
 export async function recordGame(snap: Snapshot, d: Derived, series: SeriesId, winner: string) {
@@ -90,8 +90,8 @@ export async function recordGame(snap: Snapshot, d: Derived, series: SeriesId, w
   const loser = winner === s.a ? s.b : s.a;
   const tickets = playoffGameTickets(s, winner, snap.settings.tickets);
   // Store the length with each game: the first game locks it for the series.
-  await record(snap.tournament!, 'match', { phase: series, winner, loser, tickets, payload: { bestOf: s.bestOf } });
-  return tickets;
+  const res = await record(snap.tournament!, 'match', { phase: series, winner, loser, tickets, payload: { bestOf: s.bestOf } });
+  return Object.assign(tickets, { wanted: res.wanted ?? 0, paid: res.paid ?? 0 });
 }
 
 export async function startBracket(snap: Snapshot, d: Derived) {
@@ -138,7 +138,8 @@ export async function newTournament(opts: { bankId?: string; isDemo?: boolean; p
   return row;
 }
 
-export async function startTournament(t: Tournament, kingId: string, queue: string[]) {
+export async function startTournament(t: Tournament, kingId: string, queue: string[], snap?: Snapshot) {
+  if (snap) await saveSettings(snap, { sessionStart: { tournamentId: t.id, at: new Date().toISOString() } });
   await withRetry(() =>
     supabase
       .from('tournaments')
@@ -151,7 +152,13 @@ export async function setupTournament(t: Tournament, patch: Partial<Pick<Tournam
   await withRetry(() => supabase.from('tournaments').update(patch).eq('id', t.id));
 }
 
-export function restartFromScratch(snap: Snapshot, keepTickets: boolean) {
+/** Start time of the current tournament's main session (ms), or null. */
+export function sessionStartMs(snap: Snapshot): number | null {
+  const s = snap.settings.sessionStart;
+  return s && s.tournamentId === snap.tournament?.id ? Date.parse(s.at) : null;
+}
+
+export async function restartFromScratch(snap: Snapshot, keepTickets: boolean) {
   return newTournament({
     players: snap.players,
     bankId: keepTickets ? snap.tournament?.ticket_bank_id : undefined,
@@ -209,7 +216,20 @@ export async function resetTicketBank(snap: Snapshot) {
 
 // ------------------------------------------------------------ tickets
 
+/** Tickets left in the night's budget (awards only; prizes don't give any back). */
+export function ticketsLeft(snap: Snapshot): number {
+  const issued = snap.balances.reduce((n, b) => n + (b.earned ?? Math.max(0, b.balance)), 0);
+  return Math.max(0, snap.settings.ticketBudget - issued);
+}
+
+function checkBudget(snap: Snapshot, total: number) {
+  if (snap.settings.ticketsFrozen) throw new Error('Tickets are frozen for payout. Unfreeze them first.');
+  const left = ticketsLeft(snap);
+  if (total > left) throw new Error(`Over the ticket budget: only ${left} left`);
+}
+
 export async function awardTickets(snap: Snapshot, playerId: string, amount: number, reason: string, source = 'Control') {
+  checkBudget(snap, amount);
   await withRetry(() =>
     supabase.from('ticket_events').insert({
       bank_id: snap.tournament!.ticket_bank_id,
@@ -224,6 +244,7 @@ export async function awardTickets(snap: Snapshot, playerId: string, amount: num
 /** One award for every kid in the list, in a single insert. */
 export async function awardEveryone(snap: Snapshot, playerIds: string[], amount: number, reason: string) {
   if (!playerIds.length) return;
+  checkBudget(snap, amount * playerIds.length);
   await withRetry(() =>
     supabase.from('ticket_events').insert(
       playerIds.map((player_id) => ({
@@ -237,7 +258,8 @@ export async function awardEveryone(snap: Snapshot, playerIds: string[], amount:
   );
 }
 
-export async function undoTicket(id: string) {
+export async function undoTicket(id: string, snap?: Snapshot) {
+  if (snap?.settings.ticketsFrozen) throw new Error('Tickets are frozen for payout. Unfreeze them first.');
   await withRetry(() => supabase.from('ticket_events').update({ undone: true }).eq('id', id));
 }
 

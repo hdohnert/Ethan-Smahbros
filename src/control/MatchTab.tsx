@@ -96,7 +96,7 @@ function Setup({ live }: { live: Live }) {
           <button
             className="btn btn--xl btn--go"
             disabled={busy || !king}
-            onClick={() => run(() => startTournament(t, king!, queue).then(live.refresh), "Let's go!")}
+            onClick={() => run(() => startTournament(t, king!, queue, snap).then(live.refresh), "Let's go!")}
           >
             Start Tournament
           </button>
@@ -135,7 +135,11 @@ function KothCard({ live }: { live: Live }) {
       setFlash(winner);
       window.setTimeout(() => setFlash(null), 700);
       const won = res.awards.filter((a) => a.player_id === winner).reduce((n, a) => n + a.amount, 0);
-      toast(`${get(winner)?.name} wins! +${won} 🎟️${res.rest ? ` · ${get(winner)?.name} takes a King's Rest` : ''}`);
+      if (res.paid < res.wanted) {
+        toast(`${get(winner)?.name} wins! Ticket budget reached: paid ${res.paid} of ${res.wanted} tickets.`, 'error');
+      } else {
+        toast(`${get(winner)?.name} wins! +${won} 🎟️${res.rest ? ` · ${get(winner)?.name} takes a King's Rest` : ''}`);
+      }
     }
   };
 
@@ -360,7 +364,8 @@ function PlayoffCard({ live }: { live: Live }) {
       await live.refresh();
       const won = tickets.filter((t) => t.player_id === winner).reduce((n, t) => n + t.amount, 0);
       const series = tickets.some((t) => t.reason === 'Reached the final' || t.reason === 'Champion!');
-      toast(`${get(winner)?.name} wins the ${series ? 'series' : 'game'}! +${won} 🎟️`);
+      if (tickets.paid < tickets.wanted) toast(`Ticket budget reached: paid ${tickets.paid} of ${tickets.wanted} tickets.`, 'error');
+      else toast(`${get(winner)?.name} wins the ${series ? 'series' : 'game'}! +${won} 🎟️`);
     }
   };
 
