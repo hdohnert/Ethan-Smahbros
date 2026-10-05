@@ -24,12 +24,14 @@ import type {
 export const winsNeeded = (bestOf: number) => Math.floor(Math.max(1, bestOf) / 2) + 1;
 
 export function emptyStats(): Stats {
-  return { wins: 0, losses: 0, streak: 0, bestStreak: 0, played: 0, formerKing: false, giantSlayer: 0 };
+  return { wins: 0, losses: 0, streak: 0, bestStreak: 0, played: 0, formerKing: false, giantSlayer: 0, lastWin: 0 };
 }
 
-function series(id: SeriesId, a: string | null, b: string | null, need: number): Series {
-  return { id, a, b, winsA: 0, winsB: 0, need, winner: null };
+function series(id: SeriesId, a: string | null, b: string | null, bestOf: number): Series {
+  return { id, a, b, winsA: 0, winsB: 0, bestOf, need: winsNeeded(bestOf), winner: null };
 }
+
+const validBestOf = (n: number | undefined) => (n === 1 || n === 3 || n === 5 ? n : 3);
 
 export function replay(
   t: RulesTournament | null,
@@ -38,8 +40,8 @@ export function replay(
   opts: ReplayOptions = {},
 ): Derived {
   let format: MatchFormat = opts.defaultFormat ?? '1v1';
-  const semiNeed = winsNeeded(opts.semiBestOf ?? 3);
-  const finalNeed = winsNeeded(opts.finalBestOf ?? 3);
+  const semiBestOf = validBestOf(opts.semiBestOf);
+  const finalBestOf = validBestOf(opts.finalBestOf);
   const stats: Record<string, Stats> = {};
   const stat = (id: string) => (stats[id] ??= emptyStats());
   for (const p of players) stat(p.id);
@@ -81,6 +83,7 @@ export function replay(
       ws.played++;
       ws.streak++;
       ws.bestStreak = Math.max(ws.bestStreak, ws.streak);
+      ws.lastWin = e.id;
       for (const l of losers) {
         const ls = stat(l);
         ls.losses++;
@@ -118,14 +121,19 @@ export function replay(
         status = 'playoff';
         bracket = {
           seeds,
-          semi1: series('semi1', seeds[0], seeds[3], semiNeed),
-          semi2: series('semi2', seeds[1], seeds[2], semiNeed),
-          final: series('final', null, null, finalNeed),
+          semi1: series('semi1', seeds[0], seeds[3], semiBestOf),
+          semi2: series('semi2', seeds[1], seeds[2], semiBestOf),
+          final: series('final', null, null, finalBestOf),
         };
       }
     } else if (e.kind === 'match' && bracket && status === 'playoff' && e.phase && e.phase !== 'koth' && e.winner_id) {
       const s = bracket[e.phase];
       if (s.winner || !s.a || !s.b) continue;
+      // The first game locks the series length, so later settings changes only affect series not yet started.
+      if (s.winsA + s.winsB === 0) {
+        const bo = (e.payload as MatchPayload | null)?.bestOf;
+        if (bo) Object.assign(s, { bestOf: validBestOf(bo), need: winsNeeded(validBestOf(bo)) });
+      }
       if (e.winner_id === s.a) s.winsA++;
       else if (e.winner_id === s.b) s.winsB++;
       else continue;

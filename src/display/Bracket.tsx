@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Avatar } from '../ui/Avatar';
 import type { EffectsState } from '../effects/useEffectsEngine';
+import { seriesFormat } from '../data/types';
 import type { BoardModel, BoardPlayer, BoardSeries } from './model';
 
 /** Semis on the left feeding the final on the right, with series scores. */
@@ -10,8 +11,8 @@ export function Bracket({ m, fx }: { m: BoardModel; fx?: EffectsState }) {
   return (
     <section className="panel bracket">
       <motion.div className="bracket__col" initial={{ opacity: 0, x: '-6vw' }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }}>
-        <SeriesBox s={b.semi1} label="Semifinal 1 · #1 vs #4" live={m.currentSeries === 'semi1'} fx={fx} />
-        <SeriesBox s={b.semi2} label="Semifinal 2 · #2 vs #3" live={m.currentSeries === 'semi2'} fx={fx} />
+        <SeriesBox s={b.semi1} label={`Semifinal · ${seriesFormat(b.semi1.bestOf)}`} sub="#1 vs #4" live={m.currentSeries === 'semi1'} fx={fx} />
+        <SeriesBox s={b.semi2} label={`Semifinal · ${seriesFormat(b.semi2.bestOf)}`} sub="#2 vs #3" live={m.currentSeries === 'semi2'} fx={fx} />
       </motion.div>
       <motion.div className="bracket__lines" aria-hidden initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5, duration: 0.4 }}>
         <span />
@@ -23,8 +24,8 @@ export function Bracket({ m, fx }: { m: BoardModel; fx?: EffectsState }) {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.8, duration: 0.5 }}
       >
-        <SeriesBox s={b.final} label="🏆 FINAL" live={m.currentSeries === 'final'} big fx={fx} slideIn />
-        <div className="bracket__note">Best of 3 · first to 2 wins</div>
+        <SeriesBox s={b.final} label={`🏆 Final · ${seriesFormat(b.final.bestOf)}`} live={m.currentSeries === 'final'} big fx={fx} slideIn />
+        <div className="bracket__note">{b.final.need > 1 ? `First to ${b.final.need} wins is the champion` : 'One game for the crown'}</div>
       </motion.div>
     </section>
   );
@@ -33,6 +34,7 @@ export function Bracket({ m, fx }: { m: BoardModel; fx?: EffectsState }) {
 function SeriesBox({
   s,
   label,
+  sub,
   live,
   big,
   fx,
@@ -40,6 +42,7 @@ function SeriesBox({
 }: {
   s: BoardSeries;
   label: string;
+  sub?: string;
   live: boolean;
   big?: boolean;
   fx?: EffectsState;
@@ -50,15 +53,17 @@ function SeriesBox({
     <div className={`series${live ? ' series--live' : ''}${big ? ' series--big' : ''}`}>
       <div className="series__label">
         {label}
+        {sub && <span className="series__sub">{sub}</span>}
         {live && <span className="series__live">NOW</span>}
       </div>
-      <SeriesRow p={s.a} wins={s.winsA} won={!!s.winner && s.winner.id === s.a?.id} lost={!!s.winner && s.winner.id !== s.a?.id} ko={ko(s.a)} slideIn={slideIn} from={-1} />
-      <SeriesRow p={s.b} wins={s.winsB} won={!!s.winner && s.winner.id === s.b?.id} lost={!!s.winner && s.winner.id !== s.b?.id} ko={ko(s.b)} slideIn={slideIn} from={1} />
+      <SeriesRow need={s.need} p={s.a} wins={s.winsA} won={!!s.winner && s.winner.id === s.a?.id} lost={!!s.winner && s.winner.id !== s.a?.id} ko={ko(s.a)} slideIn={slideIn} from={-1} />
+      <SeriesRow need={s.need} p={s.b} wins={s.winsB} won={!!s.winner && s.winner.id === s.b?.id} lost={!!s.winner && s.winner.id !== s.b?.id} ko={ko(s.b)} slideIn={slideIn} from={1} />
     </div>
   );
 }
 
 function SeriesRow({
+  need,
   p,
   wins,
   won,
@@ -67,6 +72,7 @@ function SeriesRow({
   slideIn,
   from,
 }: {
+  need: number;
   p: BoardPlayer | null;
   wins: number;
   won: boolean;
@@ -86,7 +92,7 @@ function SeriesRow({
       {p ? <Avatar player={p} /> : <span className="avatar avatar--tbd">?</span>}
       <span className="series__name">{p?.name ?? 'TBD'}</span>
       <span className="series__pips">
-        {[0, 1].map((i) => (
+        {Array.from({ length: need }, (_, i) => (
           <span key={i} className={`pip${i < wins ? ' pip--on' : ''}`} />
         ))}
       </span>

@@ -3,7 +3,7 @@ import type { BoardModel } from './model';
 import { rulesText } from '../data/types';
 
 export function RulesScreen({ m }: { m: BoardModel }) {
-  const text = rulesText(m.format);
+  const text = rulesText(m.format, m.settings.semiBestOf, m.settings.finalBestOf);
   return (
     <div className="board safe">
       <Header m={{ ...m, phaseLabel: 'How to Play' }} />

@@ -31,6 +31,8 @@ export interface MatchPayload {
   losers?: string[];
   /** Format the match was played in. */
   format?: MatchFormat;
+  /** Playoff game: the series length when it was played (locks the series on its first game). */
+  bestOf?: number;
 }
 export interface QueuePayload {
   order: string[];
@@ -62,6 +64,8 @@ export interface Stats {
   formerKing: boolean;
   /** Times this player knocked off a king on a 3+ streak. */
   giantSlayer: number;
+  /** Event id of the latest win (0 if none); breaks ties in the standings. */
+  lastWin: number;
 }
 
 export interface Series {
@@ -70,7 +74,9 @@ export interface Series {
   b: string | null;
   winsA: number;
   winsB: number;
-  /** Wins needed to take the series (1 for best of 1, 2 for best of 3). */
+  /** Series length (1, 3 or 5); fixed once its first game is played. */
+  bestOf: number;
+  /** Wins needed to take the series (1 for best of 1, 2 for best of 3, 3 for best of 5). */
   need: number;
   winner: string | null;
 }

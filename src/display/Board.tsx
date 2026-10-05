@@ -27,7 +27,7 @@ export function Board({ m, fx }: { m: BoardModel; fx?: EffectsState }) {
         <aside className="side">
           {!playoff && <UpNext m={m} />}
           {playoff && <MiniStandings m={m} />}
-          <Rules format={m.format} />
+          <Rules format={m.format} semiBestOf={m.settings.semiBestOf} finalBestOf={m.settings.finalBestOf} />
         </aside>
       </main>
     </div>

@@ -120,7 +120,7 @@ describe('tiebreak order', () => {
     // Ethan 2W (best 2), Ava 1W (best 1) 1L, Ben 1W best 1 1L, Cal 0
     const d = replay(T, players, [m('Ethan', 'Ava'), m('Ethan', 'Ben'), m('Cal', 'Ethan'), m('Dee', 'Cal'), m('Ava', 'Dee'), m('Ben', 'Ava')]);
     // Wins: Ethan 2, Cal 1, Dee 1, Ava 1, Ben 1. All non-Ethan best 1. Losses: Cal1 Dee1 Ava2 Ben1.
-    expect(d.standings).toEqual(['Ethan', 'Ben', 'Cal', 'Dee', 'Ava']);
+    expect(d.standings).toEqual(['Ethan', 'Cal', 'Dee', 'Ben', 'Ava']);
   });
 });
 
@@ -273,6 +273,52 @@ describe('format changes', () => {
     expect(d.stats.Ethan).toMatchObject({ wins: 1, losses: 1, played: 2 });
     const undone = replay(T, players, [...events.slice(0, 2), { ...events[2], undone: true }], { defaultFormat: '1v1' });
     expect(undone).toEqual(replay(T, players, events.slice(0, 2), { defaultFormat: '1v1' }));
+  });
+});
+
+describe('series length', () => {
+  const seeds = ['Ethan', 'Ava', 'Ben', 'Cal'];
+  const bo = (phase: Phase, winner: string, loser: string, bestOf: number) => ({ ...game(phase, winner, loser), payload: { bestOf } });
+
+  it('best of 1: one win takes a semifinal', () => {
+    const d = replay(T, players, [bracket(seeds), bo('semi1', 'Cal', 'Ethan', 1)], { semiBestOf: 1, finalBestOf: 3 });
+    expect(d.bracket?.semi1).toMatchObject({ winner: 'Cal', bestOf: 1, need: 1 });
+    expect(d.bracket?.semi2).toMatchObject({ winner: null, bestOf: 1 });
+    expect(d.bracket?.final).toMatchObject({ bestOf: 3, need: 2 });
+    expect(playoffGameTickets(d.bracket!.semi2, 'Ava', DEFAULT_TICKETS)).toContainEqual({ player_id: 'Ava', amount: 5, reason: 'Reached the final' });
+  });
+
+  it('best of 3: needs 2 wins; best of 5 needs 3', () => {
+    let d = replay(T, players, [bracket(seeds), bo('semi1', 'Ethan', 'Cal', 3)], { semiBestOf: 3 });
+    expect(d.bracket?.semi1).toMatchObject({ winsA: 1, winner: null, need: 2 });
+    d = replay(T, players, [bracket(seeds), bo('semi1', 'Ethan', 'Cal', 5), bo('semi1', 'Ethan', 'Cal', 5)], { semiBestOf: 5 });
+    expect(d.bracket?.semi1).toMatchObject({ winsA: 2, winner: null, need: 3 });
+  });
+
+  it('a series keeps the length it started with when the setting changes', () => {
+    const events = [bracket(seeds), bo('semi1', 'Ethan', 'Cal', 3)];
+    const d = replay(T, players, events, { semiBestOf: 1 });
+    expect(d.bracket?.semi1).toMatchObject({ bestOf: 3, winner: null });
+    expect(d.bracket?.semi2).toMatchObject({ bestOf: 1 });
+  });
+
+  it('undo across a best-of-1 series end reopens it', () => {
+    const end = bo('semi1', 'Cal', 'Ethan', 1);
+    const d = replay(T, players, [bracket(seeds), { ...end, undone: true }], { semiBestOf: 1 });
+    expect(d.bracket?.semi1).toMatchObject({ winner: null, winsA: 0, winsB: 0 });
+    expect(d.currentSeries?.id).toBe('semi1');
+  });
+});
+
+describe('no ties in seeding', () => {
+  it('breaks a tie at 4th by who reached their score first', () => {
+    // Ethan 2 wins; Ava, Ben, Cal, Dee each 1 win, 0-1 losses, best streak 1.
+    const events = [m('Ethan', 'Ava'), m('Ethan', 'Ben'), m('Cal', 'Ethan'), m('Dee', 'Cal'), m('Ava', 'Dee'), m('Ben', 'Ava')];
+    const d = replay(T, players, events);
+    // Tied on wins and streak: Cal (1L), Dee (1L), Ava (2L), Ben (1L). Among 1-loss kids, Cal won first, then Dee, then Ben.
+    expect(d.standings).toEqual(['Ethan', 'Cal', 'Dee', 'Ben', 'Ava']);
+    const s = seedTop4(d, players);
+    expect(s).toEqual({ ok: true, seeds: ['Ethan', 'Cal', 'Dee', 'Ben'] });
   });
 });
 

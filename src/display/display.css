@@ -795,6 +795,13 @@
   font-size: 4vh;
 }
 
+.series__sub {
+  font-family: var(--f-body);
+  font-weight: 700;
+  font-size: 2.8vh;
+  color: var(--c-textDim);
+}
+
 .series__live {
   font-size: 2.6vh;
   padding: 0.3vh 1.2vh;

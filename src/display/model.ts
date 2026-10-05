@@ -30,6 +30,8 @@ export interface BoardSeries {
   b: BoardPlayer | null;
   winsA: number;
   winsB: number;
+  bestOf: number;
+  need: number;
   winner: BoardPlayer | null;
 }
 
@@ -79,7 +81,7 @@ export function buildModel(snap: Snapshot, d: Derived, balances: Record<string, 
   const get = (id: string | null | undefined) => (id ? (byId.get(id) ?? null) : null);
   const series = (id: SeriesId): BoardSeries => {
     const s = d.bracket![id];
-    return { id, a: get(s.a), b: get(s.b), winsA: s.winsA, winsB: s.winsB, winner: get(s.winner) };
+    return { id, a: get(s.a), b: get(s.b), winsA: s.winsA, winsB: s.winsB, bestOf: s.bestOf, need: s.need, winner: get(s.winner) };
   };
 
   return {

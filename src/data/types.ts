@@ -67,6 +67,9 @@ export interface Settings {
   kingsRest: boolean;
   /** King of the Hill format used until a format step changes it. */
   matchFormat: MatchFormat;
+  /** Playoff series lengths (1, 3 or 5). Apply to series that haven't started. */
+  semiBestOf: number;
+  finalBestOf: number;
   tickets: TicketScale;
   /** Control's "show Ticket Bank on the TV" switch. */
   showTicketBank: boolean;
@@ -89,6 +92,8 @@ export const DEFAULT_SETTINGS: Settings = {
   heroPhotoExpires: null,
   kingsRest: true,
   matchFormat: '4-player',
+  semiBestOf: 1,
+  finalBestOf: 3,
   tickets: DEFAULT_TICKETS,
   showTicketBank: false,
   autoRotateBank: true,
@@ -107,14 +112,18 @@ export const DEFAULT_SETTINGS: Settings = {
 
 /** Rules options taken from settings (players per match, series lengths). */
 export function replayOptions(s: Settings) {
-  return { defaultFormat: s.matchFormat };
+  return { defaultFormat: s.matchFormat, semiBestOf: s.semiBestOf, finalBestOf: s.finalBestOf };
 }
 
 /** Kid-friendly rules text that matches the current settings. */
-export function rulesText(format: MatchFormat) {
+/** "Winner advances" for one game, else "Best of N". */
+export const seriesFormat = (bestOf: number) => (bestOf <= 1 ? 'Winner advances' : `Best of ${bestOf}`);
+
+export function rulesText(format: MatchFormat, semiBestOf = 1, finalBestOf = 3) {
+  const semis = semiBestOf <= 1 ? 'one game, winner advances' : `best of ${semiBestOf}`;
   return {
     koth: `${format === '1v1' ? 'One on one.' : '4 players at a time: the king plus the next 3 in line.'} Win and you stay on as king. Lose and you go to the back of the line. Most wins leads!`,
-    playoff: theme.rules.playoff,
+    playoff: `The top 4 by wins make it. Semis are 1 vs 4 and 2 vs 3 (${semis}). The final is ${finalBestOf <= 1 ? 'one game' : `best of ${finalBestOf}`}. Win it and you're the champion!`,
   };
 }
 

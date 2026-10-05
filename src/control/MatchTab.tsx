@@ -14,7 +14,7 @@ import {
   startDemo,
   startTournament,
 } from '../data/api';
-import type { Player } from '../data/types';
+import { seriesFormat, type Player } from '../data/types';
 import type { Live } from '../data/useSnapshot';
 import { seedTop4 } from '../rules/replay';
 import type { Series } from '../rules/types';
@@ -330,7 +330,10 @@ function BracketStarter({ live }: { live: Live }) {
               <li key={id}>{get(id)?.name}</li>
             ))}
           </ol>
-          <p className="muted small">Semis: 1 vs 4 and 2 vs 3. Each makes the Top 4 and earns {snap.settings.tickets.top4} tickets.</p>
+          <p className="muted small">
+            Semis: 1 vs 4 and 2 vs 3 ({seriesFormat(snap.settings.semiBestOf)}). Final: {seriesFormat(snap.settings.finalBestOf)}. Each
+            makes the Top 4 and earns {snap.settings.tickets.top4} tickets.
+          </p>
         </Confirm>
       )}
     </section>
@@ -363,14 +366,16 @@ function PlayoffCard({ live }: { live: Live }) {
 
   return (
     <section className="card stack">
-      <h2 className="card__title">Top-4 Playoff · best of 3</h2>
+      <h2 className="card__title">Top-4 Playoff · always 1 vs 1</h2>
       {s && s.a && s.b && get(s.a) && get(s.b) && (
         <>
-          <div className="muted">{SERIES_NAME[s.id]} · tap the winner of this game</div>
+          <div className="muted">
+            <b>{SERIES_NAME[s.id]} · {seriesFormat(s.bestOf)}</b> · tap the winner of this game
+          </div>
           <div className="match">
-            <SeriesButton player={get(s.a)!} wins={s.winsA} disabled={busy} onClick={() => setPick(s.a)} />
+            <SeriesButton player={get(s.a)!} wins={s.winsA} need={s.need} disabled={busy} onClick={() => setPick(s.a)} />
             <div className="match__vs">VS</div>
-            <SeriesButton player={get(s.b)!} wins={s.winsB} disabled={busy} onClick={() => setPick(s.b)} />
+            <SeriesButton player={get(s.b)!} wins={s.winsB} need={s.need} disabled={busy} onClick={() => setPick(s.b)} />
           </div>
         </>
       )}
@@ -386,10 +391,10 @@ function PlayoffCard({ live }: { live: Live }) {
   );
 }
 
-function SeriesButton({ player, wins, disabled, onClick }: { player: Player; wins: number; disabled: boolean; onClick: () => void }) {
+function SeriesButton({ player, wins, need, disabled, onClick }: { player: Player; wins: number; need: number; disabled: boolean; onClick: () => void }) {
   return (
     <button className="fighter-btn" onClick={onClick} disabled={disabled}>
-      <span className="fighter-btn__label">{'★'.repeat(wins) + '☆'.repeat(2 - wins)}</span>
+      <span className="fighter-btn__label">{need > 1 ? '★'.repeat(wins) + '☆'.repeat(need - wins) : 'One game'}</span>
       <span className="fighter-btn__row">
         <Avatar player={player} />
         <span className="fighter-btn__name">{player.name}</span>
@@ -401,7 +406,11 @@ function SeriesButton({ player, wins, disabled, onClick }: { player: Player; win
 function SeriesLine({ s, name }: { s: Series; name: (id: string | null) => string }) {
   return (
     <div className={`series-line${s.winner ? ' series-line--done' : ''}`}>
-      <span className="series-line__label">{SERIES_NAME[s.id]}</span>
+      <span className="series-line__label">
+        {SERIES_NAME[s.id]}
+        <br />
+        <small>{seriesFormat(s.bestOf)}</small>
+      </span>
       <span className={s.winner && s.winner === s.a ? 'win' : ''}>{s.a ? name(s.a) : 'TBD'}</span>
       <b>
         {s.winsA}–{s.winsB}

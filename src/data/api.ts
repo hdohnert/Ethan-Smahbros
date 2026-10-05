@@ -89,7 +89,8 @@ export async function recordGame(snap: Snapshot, d: Derived, series: SeriesId, w
   if (!s || !s.a || !s.b || s.winner) throw new Error('That series is not being played');
   const loser = winner === s.a ? s.b : s.a;
   const tickets = playoffGameTickets(s, winner, snap.settings.tickets);
-  await record(snap.tournament!, 'match', { phase: series, winner, loser, tickets });
+  // Store the length with each game: the first game locks it for the series.
+  await record(snap.tournament!, 'match', { phase: series, winner, loser, tickets, payload: { bestOf: s.bestOf } });
   return tickets;
 }
 

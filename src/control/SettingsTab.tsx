@@ -60,6 +60,7 @@ export function SettingsTab({ live, email }: { live: Live; email: string }) {
   return (
     <div className="stack">
       <FormatCard live={live} />
+      <PlayoffLengthCard live={live} />
 
       <section className="card stack">
         <h2 className="card__title">🎂 Birthday</h2>
@@ -164,6 +165,38 @@ function FormatCard({ live }: { live: Live }) {
           ? 'Playoff games are always 1 vs 1.'
           : '4-player: the king plays the next 3 in line, the winner stays king. Switch only between matches; Undo can switch it back.'}
       </p>
+    </section>
+  );
+}
+
+/** Semifinal and final lengths. A series keeps the length it started with. */
+function PlayoffLengthCard({ live }: { live: Live }) {
+  const snap = live.snap!;
+  const { busy, run } = useAction();
+  const s = snap.settings;
+  const row = (label: string, key: 'semiBestOf' | 'finalBestOf') => (
+    <div className="field">
+      <span>{label}</span>
+      <div className="seg">
+        {[1, 3, 5].map((n) => (
+          <button
+            key={n}
+            className={`seg__btn${s[key] === n ? ' seg__btn--on' : ''}`}
+            disabled={busy}
+            onClick={() => s[key] !== n && run(() => saveSettings(snap, { [key]: n }).then(live.refresh), 'Saved')}
+          >
+            Best of {n}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+  return (
+    <section className="card stack">
+      <h2 className="card__title">🏆 Playoff length</h2>
+      {row('Semifinals', 'semiBestOf')}
+      {row('Final', 'finalBestOf')}
+      <p className="muted small">Playoff games are always 1 vs 1. A change only affects series that haven't started yet.</p>
     </section>
   );
 }

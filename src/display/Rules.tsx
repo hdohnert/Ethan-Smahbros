@@ -3,8 +3,8 @@ import { rulesText } from '../data/types';
 import type { MatchFormat } from '../rules/types';
 
 /** Both rules on wide screens; on narrow ones CSS shows only the active one, which rotates. */
-export function Rules({ format }: { format: MatchFormat }) {
-  const text = rulesText(format);
+export function Rules({ format, semiBestOf, finalBestOf }: { format: MatchFormat; semiBestOf: number; finalBestOf: number }) {
+  const text = rulesText(format, semiBestOf, finalBestOf);
   const ITEMS = [
     { label: 'King of the Hill', text: text.koth },
     { label: 'Top-4 Playoff', text: text.playoff },
