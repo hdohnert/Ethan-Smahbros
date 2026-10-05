@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { newTournament, refreshPhotoLinks, undoLast, demoStep } from '../data/api';
+import { newTournament, refreshPhotoLinks, saveSettings, undoLast, demoStep } from '../data/api';
+import { DEFAULT_TICKETS, TICKET_SCALE_VERSION } from '../rules/tickets';
 import { useSnapshot } from '../data/useSnapshot';
 import type { Snapshot } from '../data/types';
 import { useAction } from '../ui/Toast';
@@ -31,6 +32,17 @@ export function ControlMain({ email }: { email: string }) {
       void newTournament({ players: snap.players })
         .then(() => live.refresh())
         .finally(() => (creating.current = false));
+    }
+  }, [snap, live]);
+
+  // One-time update of saved ticket amounts to the current defaults.
+  const migrating = useRef(false);
+  useEffect(() => {
+    if (snap && (snap.settings.ticketsVersion ?? 1) < TICKET_SCALE_VERSION && !migrating.current) {
+      migrating.current = true;
+      void saveSettings(snap, { tickets: DEFAULT_TICKETS, ticketsVersion: TICKET_SCALE_VERSION })
+        .then(() => live.refresh())
+        .catch(() => (migrating.current = false));
     }
   }, [snap, live]);
 

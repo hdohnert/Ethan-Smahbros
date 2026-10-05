@@ -4,16 +4,20 @@
 
 import type { Derived, Series, TicketAward, TicketScale } from './types';
 
+/** Night of 20 kids against 1,000 physical tickets: about 585 from the tournament. */
 export const DEFAULT_TICKETS: TicketScale = {
-  play: 2,
-  win: 2,
-  streak3: 2,
-  streak5: 3,
-  giantSlayer: 3,
-  top4: 5,
-  final: 5,
-  champion: 10,
+  play: 5,
+  win: 5,
+  streak3: 5,
+  streak5: 10,
+  giantSlayer: 10,
+  top4: 15,
+  final: 15,
+  champion: 25,
 };
+
+/** Bumped when DEFAULT_TICKETS changes, so Control rewrites saved amounts once. */
+export const TICKET_SCALE_VERSION = 2;
 
 export const REST_STREAK = 5;
 

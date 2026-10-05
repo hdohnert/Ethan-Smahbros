@@ -90,27 +90,27 @@ describe('streak math', () => {
     let events: RulesEvent[] = [m('Ethan', 'Ava'), m('Ethan', 'Ben')];
     let d = replay(T, players, events);
     const third = kothResult(d, 'Ethan', 'Cal', DEFAULT_TICKETS, true);
-    expect(third.awards).toContainEqual({ player_id: 'Ethan', amount: 2, reason: '3-win streak bonus' });
+    expect(third.awards).toContainEqual({ player_id: 'Ethan', amount: 5, reason: '3-win streak bonus' });
     expect(third.rest).toBe(false);
     events = [...events, m('Ethan', 'Cal')];
     d = replay(T, players, events);
     const fourth = kothResult(d, 'Ethan', 'Dee', DEFAULT_TICKETS, true);
     expect(fourth.awards.map((a) => a.reason)).toEqual(['Played a match', 'Won a match']);
     const slayer = kothResult(d, 'Dee', 'Ethan', DEFAULT_TICKETS, true);
-    expect(slayer.awards).toContainEqual({ player_id: 'Dee', amount: 3, reason: 'Giant Slayer bonus' });
+    expect(slayer.awards).toContainEqual({ player_id: 'Dee', amount: 10, reason: 'Giant Slayer bonus' });
     events = [...events, m('Ethan', 'Dee')];
     d = replay(T, players, events);
     const fifth = kothResult(d, 'Ethan', 'Ava', DEFAULT_TICKETS, true);
-    expect(fifth.awards).toContainEqual({ player_id: 'Ethan', amount: 3, reason: '5-win streak bonus' });
+    expect(fifth.awards).toContainEqual({ player_id: 'Ethan', amount: 10, reason: '5-win streak bonus' });
     expect(fifth.rest).toBe(true);
     expect(kothResult(d, 'Ethan', 'Ava', DEFAULT_TICKETS, false).rest).toBe(false);
   });
 
-  it('pays 2 for playing and 4 for winning', () => {
+  it('pays 5 for playing and 10 for winning', () => {
     const r = kothResult(replay(T, players, []), 'Ava', 'Ethan', DEFAULT_TICKETS, true);
     expect(r.awards).toEqual([
-      { player_id: 'Ethan', amount: 2, reason: 'Played a match' },
-      { player_id: 'Ava', amount: 4, reason: 'Won a match' },
+      { player_id: 'Ethan', amount: 5, reason: 'Played a match' },
+      { player_id: 'Ava', amount: 10, reason: 'Won a match' },
     ]);
   });
 });
@@ -161,13 +161,13 @@ describe('best-of-3 completion', () => {
     expect(d.bracket?.final).toMatchObject({ a: 'Ethan', b: 'Ben', winner: null });
     expect(d.currentSeries?.id).toBe('final');
     expect(playoffGameTickets(d.currentSeries!, 'Ben', DEFAULT_TICKETS)).toEqual([
-      { player_id: 'Ethan', amount: 2, reason: 'Played a playoff game' },
-      { player_id: 'Ben', amount: 4, reason: 'Won a playoff game' },
+      { player_id: 'Ethan', amount: 5, reason: 'Played a playoff game' },
+      { player_id: 'Ben', amount: 10, reason: 'Won a playoff game' },
     ]);
 
     d = replay(T, players, [...events, game('final', 'Ben', 'Ethan')]);
     expect(playoffGameTickets(d.currentSeries!, 'Ben', DEFAULT_TICKETS)).toContainEqual({
-      player_id: 'Ben', amount: 10, reason: 'Champion!',
+      player_id: 'Ben', amount: 25, reason: 'Champion!',
     });
     d = replay(T, players, [...events, game('final', 'Ben', 'Ethan'), game('final', 'Ben', 'Ethan')]);
     expect(d.champion).toBe('Ben');
@@ -210,8 +210,8 @@ describe('4-player matches', () => {
     expect(d.stats.Ethan.streak).toBe(3);
     const r = kothResult(d, 'Ben', ['Ethan', 'Cal', 'Dee'], DEFAULT_TICKETS, true);
     expect(r.awards.filter((a) => a.reason === 'Played a match').map((a) => a.player_id)).toEqual(['Ethan', 'Cal', 'Dee']);
-    expect(r.awards).toContainEqual({ player_id: 'Ben', amount: 4, reason: 'Won a match' });
-    expect(r.awards).toContainEqual({ player_id: 'Ben', amount: 3, reason: 'Giant Slayer bonus' });
+    expect(r.awards).toContainEqual({ player_id: 'Ben', amount: 10, reason: 'Won a match' });
+    expect(r.awards).toContainEqual({ player_id: 'Ben', amount: 10, reason: 'Giant Slayer bonus' });
   });
 
   it('uses everyone who is here when fewer than 4 kids are active', () => {
@@ -285,7 +285,7 @@ describe('series length', () => {
     expect(d.bracket?.semi1).toMatchObject({ winner: 'Cal', bestOf: 1, need: 1 });
     expect(d.bracket?.semi2).toMatchObject({ winner: null, bestOf: 1 });
     expect(d.bracket?.final).toMatchObject({ bestOf: 3, need: 2 });
-    expect(playoffGameTickets(d.bracket!.semi2, 'Ava', DEFAULT_TICKETS)).toContainEqual({ player_id: 'Ava', amount: 5, reason: 'Reached the final' });
+    expect(playoffGameTickets(d.bracket!.semi2, 'Ava', DEFAULT_TICKETS)).toContainEqual({ player_id: 'Ava', amount: 15, reason: 'Reached the final' });
   });
 
   it('best of 3: needs 2 wins; best of 5 needs 3', () => {

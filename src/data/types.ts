@@ -71,6 +71,8 @@ export interface Settings {
   semiBestOf: number;
   finalBestOf: number;
   tickets: TicketScale;
+  /** Which DEFAULT_TICKETS the saved amounts came from (absent = the original 2/2/2/3/3/5/5/10). */
+  ticketsVersion?: number;
   /** Control's "show Ticket Bank on the TV" switch. */
   showTicketBank: boolean;
   /** Rotate to the Ticket Bank for 15 s every 3 min between matches. */

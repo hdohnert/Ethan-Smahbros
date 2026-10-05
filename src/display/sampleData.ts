@@ -48,6 +48,6 @@ export function sampleModel(): BoardModel {
   };
   const t = { status: 'live' as const, starting_king_id: 'ethan', queue: ids.slice(1) };
   const d = replay(t, players, events, { defaultFormat: DEFAULT_SETTINGS.matchFormat });
-  const balances = Object.fromEntries(ids.map((id) => [id, d.stats[id].played * 2 + d.stats[id].wins * 2 + (d.stats[id].bestStreak >= 3 ? 2 : 0)]));
+  const balances = Object.fromEntries(ids.map((id) => [id, d.stats[id].played * 5 + d.stats[id].wins * 5 + (d.stats[id].bestStreak >= 3 ? 5 : 0)]));
   return buildModel(snap, d, balances);
 }
