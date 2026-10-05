@@ -54,6 +54,7 @@ export interface BoardModel {
   currentSeries: SeriesId | null;
   champion: BoardPlayer | null;
   lastEventId: number | null;
+  tournamentId: string | null;
 }
 
 export function buildModel(snap: Snapshot, d: Derived, balances: Record<string, number>): BoardModel {
@@ -100,6 +101,7 @@ export function buildModel(snap: Snapshot, d: Derived, balances: Record<string, 
     currentSeries: d.currentSeries?.id ?? null,
     champion: get(d.champion),
     lastEventId: d.lastEvent?.id ?? null,
+    tournamentId: snap.tournament?.id ?? null,
   };
 }
 

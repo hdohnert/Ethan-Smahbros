@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { awardEveryone, awardTickets, resetTicketBank, saveSettings, setStationPin, undoTicket } from '../data/api';
 import { Confirm } from '../ui/Confirm';
 import { BudgetDetails, useBudget } from './Budget';
+import { LrcCard } from './LrcCard';
 import type { Prize } from '../data/types';
 import type { Live } from '../data/useSnapshot';
 import { Avatar } from '../ui/Avatar';
@@ -22,6 +23,8 @@ export function TicketsTab({ live }: { live: Live }) {
   return (
     <div className="stack">
       <BudgetCard live={live} />
+
+      <LrcCard live={live} />
 
       <section className="card stack">
         <h2 className="card__title">📺 Ticket Bank on the TV</h2>

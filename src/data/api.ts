@@ -3,9 +3,10 @@
 
 import { replay, seedTop4 } from '../rules/replay';
 import { kothResult, playoffGameTickets, top4Tickets } from '../rules/tickets';
+import { makeTables, roundCost, tablePayout } from '../rules/lrc';
 import type { Derived, MatchFormat, RulesEvent, SeriesId, TicketAward } from '../rules/types';
 import { supabase } from './supabase';
-import { replayOptions, type Player, type Settings, type Snapshot, type Tournament } from './types';
+import { replayOptions, type LrcRound, type Player, type Settings, type Snapshot, type Tournament } from './types';
 
 export class StaleError extends Error {
   constructor() {
@@ -256,6 +257,83 @@ export async function awardEveryone(snap: Snapshot, playerIds: string[], amount:
       })),
     ),
   );
+}
+
+// ------------------------------------------------------------ Left Right Center
+
+/** The active round for this tournament, if any. */
+export function currentLrc(snap: Snapshot) {
+  const r = snap.settings.lrc;
+  return r && r.tournamentId === snap.tournament?.id ? r : null;
+}
+
+/** Deals the kids who are here into tables, after checking the bank can cover the round. */
+export async function startLrcRound(snap: Snapshot) {
+  if (snap.settings.ticketsFrozen) throw new Error('Tickets are frozen for payout. Unfreeze them first.');
+  const s = snap.settings;
+  const here = snap.players.filter((p) => p.active).map((p) => p.id);
+  if (here.length < 2) throw new Error('Need at least 2 kids switched on to play.');
+  const cost = roundCost(here.length, s.lrcTicketsEach);
+  const left = ticketsLeft(snap);
+  if (cost > left) {
+    throw new Error(`Not enough tickets in the bank: this round needs ${cost} (${here.length} kids × ${s.lrcTicketsEach}), only ${left} left.`);
+  }
+  const round: LrcRound = {
+    id: crypto.randomUUID(),
+    name: s.lrcName || 'Left Right Center',
+    ticketsEach: s.lrcTicketsEach,
+    tables: makeTables(here, s.lrcTableSize),
+    winners: {},
+    tournamentId: snap.tournament!.id,
+  };
+  await saveSettings(snap, { lrc: round });
+}
+
+/** The last kid with tickets at a table takes every ticket at that table. */
+export async function setLrcWinner(snap: Snapshot, table: number, playerId: string) {
+  const r = currentLrc(snap);
+  if (!r) throw new Error('No round in progress');
+  if (r.winners[table]) throw new Error('That table already has a winner. Undo it first.');
+  const amount = tablePayout(r.tables[table], r.ticketsEach);
+  checkBudget(snap, amount);
+  const row = await withRetry<{ id: string }>(() =>
+    supabase
+      .from('ticket_events')
+      .insert({
+        bank_id: snap.tournament!.ticket_bank_id,
+        player_id: playerId,
+        amount,
+        reason: `Won table ${table + 1}`,
+        source: r.name.slice(0, 40),
+      })
+      .select('id')
+      .single(),
+  );
+  await saveSettings(snap, { lrc: { ...r, winners: { ...r.winners, [table]: { playerId, ticketId: row.id, amount } } } });
+  return amount;
+}
+
+export async function undoLrcTable(snap: Snapshot, table: number) {
+  const r = currentLrc(snap);
+  const w = r?.winners[table];
+  if (!r || !w) return;
+  await undoTicket(w.ticketId, snap);
+  const winners = { ...r.winners };
+  delete winners[table];
+  await saveSettings(snap, { lrc: { ...r, winners } });
+}
+
+/** Takes back every table's tickets and cancels the round. */
+export async function undoLrcRound(snap: Snapshot) {
+  const r = currentLrc(snap);
+  if (!r) return;
+  for (const w of Object.values(r.winners)) await undoTicket(w.ticketId, snap);
+  await saveSettings(snap, { lrc: null });
+}
+
+/** Ends the round; the tickets stay with the winners. */
+export async function finishLrcRound(snap: Snapshot) {
+  await saveSettings(snap, { lrc: null });
 }
 
 export async function undoTicket(id: string, snap?: Snapshot) {

@@ -12,6 +12,7 @@ import { sampleModel } from './sampleData';
 import { TicketBank } from './TicketBank';
 import { HeroScreen } from './HeroScreen';
 import { RulesScreen } from './RulesScreen';
+import { LrcScreen } from './LrcScreen';
 import { ATTRACT_AFTER_MS, ATTRACT_SLIDE_MS } from '../effects/config';
 import { Kickoff, MomentOverlay } from '../effects/Overlays';
 import { useEffectsEngine } from '../effects/useEffectsEngine';
@@ -113,6 +114,7 @@ function Show({
   else if (view === 'bank') content = <TicketBank m={model} />;
   else if (view === 'hero') content = <HeroScreen m={model} />;
   else if (view === 'rules') content = <RulesScreen m={model} />;
+  else if (view === 'lrc') content = <LrcScreen m={model} />;
   else content = <Board m={model} fx={fx} />;
 
   return (
@@ -135,7 +137,7 @@ function Show({
   );
 }
 
-type View = 'board' | 'bank' | 'end' | 'hero' | 'rules';
+type View = 'board' | 'bank' | 'end' | 'hero' | 'rules' | 'lrc';
 const ATTRACT: View[] = ['hero', 'board', 'bank', 'rules'];
 
 /**
@@ -169,6 +171,7 @@ function useView(model: BoardModel | null): View {
 
   if (!model) return 'board';
   if (model.settings.showTicketBank) return 'bank';
+  if (model.settings.lrc && model.settings.lrc.tournamentId === model.tournamentId) return 'lrc';
   if (model.status === 'finished') return 'end';
   const quiet = now - lastChange;
   if (quiet >= ATTRACT_AFTER_MS && model.status !== 'playoff') {

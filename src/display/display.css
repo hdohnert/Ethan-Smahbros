@@ -1347,6 +1347,90 @@
   padding-left: 1.4vh;
 }
 
+/* ---------- Left Right Center ---------- */
+
+.lrc {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(min(var(--tables), 4), minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 2vh 1.6vw;
+}
+
+.lrc__table {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.lrc__table--won {
+  border-color: var(--c-gold);
+  box-shadow: 0 0 3vh rgba(255, 200, 61, 0.35);
+}
+
+.lrc__title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--f-display);
+  font-size: 3.4vh;
+  color: var(--c-pink);
+  margin-bottom: 1vh;
+}
+
+.lrc__pot {
+  color: var(--c-gold);
+}
+
+.lrc__kids {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8vh;
+}
+
+.lrc__kid {
+  display: flex;
+  align-items: center;
+  gap: 1.2vh;
+  min-width: 0;
+}
+
+.lrc__name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--f-fun);
+  font-size: 3.8vh;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lrc__kid--won .lrc__name {
+  color: var(--c-gold);
+}
+
+.lrc__kid--out {
+  opacity: 0.4;
+}
+
+.lrc__plus {
+  font-family: var(--f-display);
+  font-size: 3.6vh;
+  color: var(--c-lime);
+}
+
+.lrc__rule {
+  flex: none;
+  text-align: center;
+  font-size: 3vh;
+  color: var(--c-textDim);
+}
+
 /* ---------- Narrower screens (iPad 4:3, 3:2) ---------- */
 
 /* Rules show one at a time on narrow screens; both fit side by side at 16:9. */

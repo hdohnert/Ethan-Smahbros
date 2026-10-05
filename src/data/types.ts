@@ -56,6 +56,18 @@ export interface Prize {
   cost: number;
 }
 
+/** A Left Right Center round in progress (stored in settings so every screen sees it). */
+export interface LrcRound {
+  id: string;
+  name: string;
+  ticketsEach: number;
+  tables: string[][];
+  /** Winner per table index, with the ticket award so it can be undone. */
+  winners: Record<string, { playerId: string; ticketId: string; amount: number }>;
+  /** Tournament the round's tickets belong to (rounds don't carry across a restart). */
+  tournamentId: string;
+}
+
 export interface Settings {
   title: string;
   subtitle: string;
@@ -79,6 +91,11 @@ export interface Settings {
   ticketsFrozen: boolean;
   /** Main session length in minutes (used by the budget projection and the session clock). */
   sessionMinutes: number;
+  /** Left Right Center: tickets each player starts with, and players per table. */
+  lrcTicketsEach: number;
+  lrcTableSize: number;
+  lrcName: string;
+  lrc: LrcRound | null;
   /** When the main session of a tournament started, set by Start Tournament. */
   sessionStart: { tournamentId: string; at: string } | null;
   /** Control's "show Ticket Bank on the TV" switch. */
@@ -106,6 +123,10 @@ export const DEFAULT_SETTINGS: Settings = {
   ticketsFrozen: false,
   sessionMinutes: 75,
   sessionStart: null,
+  lrcTicketsEach: 3,
+  lrcTableSize: 5,
+  lrcName: 'Left Right Center',
+  lrc: null,
   semiBestOf: 1,
   finalBestOf: 3,
   tickets: DEFAULT_TICKETS,

@@ -61,6 +61,7 @@ export function SettingsTab({ live, email }: { live: Live; email: string }) {
     <div className="stack">
       <FormatCard live={live} />
       <PlayoffLengthCard live={live} />
+      <LrcSettingsCard live={live} />
 
       <section className="card stack">
         <h2 className="card__title">🎂 Birthday</h2>
@@ -210,6 +211,42 @@ function PlayoffLengthCard({ live }: { live: Live }) {
       {row('Semifinals', 'semiBestOf')}
       {row('Final', 'finalBestOf')}
       <p className="muted small">Playoff games are always 1 vs 1. A change only affects series that haven't started yet.</p>
+    </section>
+  );
+}
+
+/** Left Right Center: tickets each player starts with, table size, game name. */
+function LrcSettingsCard({ live }: { live: Live }) {
+  const snap = live.snap!;
+  const s = snap.settings;
+  const { busy, run } = useAction();
+  const [form, setForm] = useState({ each: s.lrcTicketsEach, size: s.lrcTableSize, name: s.lrcName });
+  const dirty = form.each !== s.lrcTicketsEach || form.size !== s.lrcTableSize || form.name !== s.lrcName;
+  return (
+    <section className="card stack">
+      <h2 className="card__title">🎲 Left Right Center</h2>
+      <label className="toggle-row">
+        <span>Tickets each player starts with</span>
+        <input className="num" type="number" min={1} max={20} value={form.each} onChange={(e) => setForm({ ...form, each: Math.max(1, Number(e.target.value) || 1) })} />
+      </label>
+      <label className="toggle-row">
+        <span>Players per table</span>
+        <input className="num" type="number" min={2} max={20} value={form.size} onChange={(e) => setForm({ ...form, size: Math.max(2, Number(e.target.value) || 2) })} />
+      </label>
+      <label className="field">
+        <span>Game name (shows on tickets and the TV)</span>
+        <input value={form.name} maxLength={40} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+      </label>
+      {dirty && (
+        <button
+          className="btn btn--go"
+          disabled={busy}
+          onClick={() => run(() => saveSettings(snap, { lrcTicketsEach: form.each, lrcTableSize: form.size, lrcName: form.name.trim() || 'Left Right Center' }).then(live.refresh), 'Saved')}
+        >
+          Save
+        </button>
+      )}
+      <p className="muted small">Applies to the next round you start.</p>
     </section>
   );
 }

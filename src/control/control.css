@@ -1160,3 +1160,73 @@
   color: #ffd0d8;
   font-weight: 600;
 }
+
+/* ---------- Left Right Center ---------- */
+
+.lrc-check {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(182, 255, 59, 0.12);
+  font-size: 15px;
+}
+
+.lrc-check--no {
+  background: rgba(255, 90, 90, 0.16);
+}
+
+.lrc-table {
+  border: 1px solid var(--c-panelBorder);
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lrc-table--done {
+  border-color: var(--c-gold);
+  background: rgba(255, 200, 61, 0.08);
+}
+
+.lrc-table__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.lrc-table__kids {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+
+.lrc-kid {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  border: 1.5px solid var(--c-panelBorder);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--c-text);
+  font-weight: 600;
+  text-align: left;
+}
+
+.lrc-kid span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lrc-table__winner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: var(--f-fun);
+  font-size: 20px;
+  color: var(--c-gold);
+}
