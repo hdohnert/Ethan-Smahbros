@@ -9,9 +9,13 @@ export function describeEvent(e: RulesEvent, players: Player[]): string {
     case 'match':
       return e.phase && e.phase !== 'koth'
         ? `${PHASE[e.phase]} game: ${name(e.winner_id)} beat ${name(e.loser_id)}`
-        : `${name(e.winner_id)} beat ${name(e.loser_id)}`;
-    case 'queue':
-      return 'line change';
+        : ((e.payload as { losers?: string[] } | null)?.losers?.length ?? 0) > 1
+          ? `${name(e.winner_id)} won a ${(e.payload as { losers: string[] }).losers.length + 1}-player match`
+          : `${name(e.winner_id)} beat ${name(e.loser_id)}`;
+    case 'queue': {
+      const format = (e.payload as { format?: string } | null)?.format;
+      return format ? `switch to ${format}` : 'line change';
+    }
     case 'bracket':
       return 'Top-4 bracket start';
     case 'end':

@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
-import { theme } from '../theme';
-
-const ITEMS = [
-  { label: 'King of the Hill', text: theme.rules.koth },
-  { label: 'Top-4 Playoff', text: theme.rules.playoff },
-];
+import { rulesText } from '../data/types';
+import type { MatchFormat } from '../rules/types';
 
 /** Both rules on wide screens; on narrow ones CSS shows only the active one, which rotates. */
-export function Rules() {
+export function Rules({ format }: { format: MatchFormat }) {
+  const text = rulesText(format);
+  const ITEMS = [
+    { label: 'King of the Hill', text: text.koth },
+    { label: 'Top-4 Playoff', text: text.playoff },
+  ];
   const [active, setActive] = useState(0);
   useEffect(() => {
-    const t = window.setInterval(() => setActive((i) => (i + 1) % ITEMS.length), 9000);
+    const t = window.setInterval(() => setActive((i) => (i + 1) % 2), 9000);
     return () => window.clearInterval(t);
   }, []);
   return (

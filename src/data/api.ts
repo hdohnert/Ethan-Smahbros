@@ -3,9 +3,9 @@
 
 import { replay, seedTop4 } from '../rules/replay';
 import { kothResult, playoffGameTickets, top4Tickets } from '../rules/tickets';
-import type { Derived, RulesEvent, SeriesId, TicketAward } from '../rules/types';
+import type { Derived, MatchFormat, RulesEvent, SeriesId, TicketAward } from '../rules/types';
 import { supabase } from './supabase';
-import type { Player, Settings, Snapshot, Tournament } from './types';
+import { replayOptions, type Player, type Settings, type Snapshot, type Tournament } from './types';
 
 export class StaleError extends Error {
   constructor() {
@@ -71,10 +71,16 @@ function record(
   });
 }
 
-export async function recordKoth(snap: Snapshot, d: Derived, winner: string, loser: string) {
+/** Everyone in the current match: the king plus the challengers. */
+export const matchPlayers = (d: Derived) => [d.king, ...d.challengers].filter((id): id is string => !!id);
+
+/** Records a King of the Hill result; everyone else in the match is a loser. */
+export async function recordKoth(snap: Snapshot, d: Derived, winner: string) {
   const t = snap.tournament!;
-  const { awards, rest } = kothResult(d, winner, loser, snap.settings.tickets, snap.settings.kingsRest);
-  await record(t, 'match', { phase: 'koth', winner, loser, payload: rest ? { rest: true } : {}, tickets: awards });
+  const losers = matchPlayers(d).filter((id) => id !== winner);
+  const { awards, rest } = kothResult(d, winner, losers, snap.settings.tickets, snap.settings.kingsRest);
+  const payload = { format: d.format, ...(rest ? { rest: true } : {}), ...(losers.length > 1 ? { losers } : {}) };
+  await record(t, 'match', { phase: 'koth', winner, loser: losers[0], payload, tickets: awards });
   return { awards, rest };
 }
 
@@ -100,6 +106,16 @@ export const endTournament = (snap: Snapshot) => record(snap.tournament!, 'end')
 
 export const setQueue = (snap: Snapshot, order: string[], note?: string) =>
   record(snap.tournament!, 'queue', { payload: { order, note } });
+
+/**
+ * Switches the match format. During King of the Hill it is a step in the
+ * event log, so Undo switches it back; before the tournament starts it just
+ * changes the saved default.
+ */
+export async function setMatchFormat(snap: Snapshot, d: Derived, format: MatchFormat) {
+  if (d.status === 'koth') await record(snap.tournament!, 'queue', { payload: { order: d.queue, note: 'format', format } });
+  else await saveSettings(snap, { matchFormat: format });
+}
 
 export async function undoLast(snap: Snapshot): Promise<RulesEvent | undefined> {
   const t = snap.tournament!;
@@ -347,13 +363,14 @@ export async function exitDemo(snap: Snapshot) {
 
 /** One random step of the demo: a match, a station award, or a playoff game. */
 export async function demoStep(snap: Snapshot): Promise<string> {
-  const d = replay(snap.tournament, snap.players, snap.events as RulesEvent[]);
+  const d = replay(snap.tournament, snap.players, snap.events as RulesEvent[], replayOptions(snap.settings));
   const pick = <T,>(xs: T[]) => xs[Math.floor(Math.random() * xs.length)];
   const name = (id: string) => snap.players.find((p) => p.id === id)?.name ?? '?';
 
   if (d.status === 'koth') {
     const kothMatches = snap.events.filter((e) => !e.undone && e.phase === 'koth').length;
-    if (kothMatches >= 24) {
+    // About a 75-minute main session: ~17 four-player matches, ~24 one-on-one.
+    if (kothMatches >= (d.format === '4-player' ? 17 : 24)) {
       await startBracket(snap, d);
       return 'Top-4 bracket started';
     }
@@ -364,10 +381,9 @@ export async function demoStep(snap: Snapshot): Promise<string> {
     }
     if (!d.king || !d.challenger) return 'Waiting for players';
     // The king wins a bit more often so streaks and fire effects show up.
-    const kingWins = Math.random() < 0.62;
-    const [w, l] = kingWins ? [d.king, d.challenger] : [d.challenger, d.king];
-    await recordKoth(snap, d, w, l);
-    return `${name(w)} beat ${name(l)}`;
+    const w = Math.random() < 0.5 ? d.king : pick(d.challengers);
+    await recordKoth(snap, d, w);
+    return `${name(w)} won the match`;
   }
   if (d.status === 'playoff' && d.currentSeries) {
     const s = d.currentSeries;

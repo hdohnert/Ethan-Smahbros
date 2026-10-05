@@ -7,7 +7,7 @@ export const EFFECTS: Record<EffectType, { enabled: boolean; ms: number }> = {
   win: { enabled: true, ms: 900 },
   tickets: { enabled: true, ms: 1400 },
   newKing: { enabled: true, ms: 1800 },
-  challenger: { enabled: true, ms: 2800 }, // "YOU'RE UP!" + 3-2-1-FIGHT
+  challenger: { enabled: true, ms: 3200 }, // "YOU'RE UP!" + 3-2-1-FIGHT
   bracket: { enabled: true, ms: 1800 },
   seriesWon: { enabled: true, ms: 1800 },
   finalIntro: { enabled: true, ms: 2200 },

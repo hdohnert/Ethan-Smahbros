@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { Reorder, useDragControls } from 'framer-motion';
 import {
   endTournament,
   exitDemo,
   getOrCreateDisplayToken,
+  matchPlayers,
   recordGame,
   recordKoth,
   restartFromScratch,
@@ -115,10 +116,9 @@ function KothCard({ live }: { live: Live }) {
   const { busy, run } = useAction();
   const [pick, setPick] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
-  const king = get(d.king);
-  const challenger = get(d.challenger);
+  const fighters = matchPlayers(d).map((id) => get(id)).filter((p): p is Player => !!p);
 
-  if (!king || !challenger) {
+  if (fighters.length < 2) {
     return (
       <section className="card">
         <p className="muted">Need at least 2 active players for a match.</p>
@@ -128,9 +128,8 @@ function KothCard({ live }: { live: Live }) {
 
   const confirm = async () => {
     const winner = pick!;
-    const loser = winner === king.id ? challenger.id : king.id;
     setPick(null);
-    const res = await run(() => recordKoth(snap, d, winner, loser));
+    const res = await run(() => recordKoth(snap, d, winner));
     if (res) {
       await live.refresh();
       setFlash(winner);
@@ -140,14 +139,27 @@ function KothCard({ live }: { live: Live }) {
     }
   };
 
-  const streak = d.stats[king.id]?.streak ?? 0;
+  const streak = d.king ? (d.stats[d.king]?.streak ?? 0) : 0;
+  const many = fighters.length > 2;
   return (
     <section className="card stack">
-      <h2 className="card__title">Who won?</h2>
-      <div className="match">
-        <FighterButton player={king} label={`👑 King${streak ? ` · ${streak}🔥` : ''}`} ko={flash === king.id} disabled={busy} onClick={() => setPick(king.id)} />
-        <div className="match__vs">VS</div>
-        <FighterButton player={challenger} label="Challenger" ko={flash === challenger.id} disabled={busy} onClick={() => setPick(challenger.id)} />
+      <h2 className="card__title">
+        Who won? <span className="pill">{d.format === '1v1' ? '1v1' : `${fighters.length}-player`}</span>
+      </h2>
+      {many && <p className="muted small">Tap only the winner. Everyone else goes to the back of the line.</p>}
+      <div className={many ? 'match match--many' : 'match'}>
+        {fighters.map((p, i) => (
+          <Fragment key={p.id}>
+            {!many && i === 1 && <div className="match__vs">VS</div>}
+            <FighterButton
+              player={p}
+              label={p.id === d.king ? `👑 King${streak ? ` · ${streak}🔥` : ''}` : 'Challenger'}
+              ko={flash === p.id}
+              disabled={busy}
+              onClick={() => setPick(p.id)}
+            />
+          </Fragment>
+        ))}
       </div>
       {pick && (
         <Confirm title={<>🏆 {get(pick)?.name} wins?</>} confirmLabel={`Yes, ${get(pick)?.name} won`} onConfirm={confirm} onCancel={() => setPick(null)} />
@@ -176,24 +188,29 @@ function UpNext({ live }: { live: Live }) {
   const { run } = useAction();
   const [all, setAll] = useState(false);
   const save = (order: string[], note: string) => run(() => setQueue(snap, order, note).then(live.refresh));
-  const SHOW = 6;
-  const shown = all ? d.queue : d.queue.slice(0, SHOW);
+  // Kids in the current match are on the card above; the rest wait in groups.
+  const playing = d.challengers;
+  const waiting = d.queue.slice(playing.length);
+  const group = Math.max(1, playing.length);
+  const SHOW = group * 2;
+  const shown = all ? waiting : waiting.slice(0, SHOW);
   return (
     <section className="card stack">
       <h2 className="card__title">Up next</h2>
-      {d.queue.length === 0 ? (
-        <p className="muted">Nobody waiting.</p>
+      {waiting.length === 0 ? (
+        <p className="muted">Nobody else waiting.</p>
       ) : (
         <QueueList
           ids={shown}
           get={get}
-          onReorder={(order) => save([...order, ...d.queue.slice(shown.length)], 'reorder')}
+          groupSize={group}
+          onReorder={(order) => save([...playing, ...order, ...waiting.slice(shown.length)], 'reorder')}
           onSkip={(id) => save([...d.queue.filter((x) => x !== id), id], 'skip')}
         />
       )}
-      {d.queue.length > SHOW && (
+      {waiting.length > SHOW && (
         <button className="btn btn--ghost" onClick={() => setAll(!all)}>
-          {all ? 'Show fewer' : `Show all ${d.queue.length}`}
+          {all ? 'Show fewer' : `Show all ${waiting.length}`}
         </button>
       )}
       <p className="muted small">Skip sends a kid to the back. Kids who leave: switch them off on the Players tab.</p>
@@ -207,12 +224,15 @@ function QueueList({
   onReorder,
   onSkip,
   firstLabel,
+  groupSize = 1,
 }: {
   ids: string[];
   get: (id: string) => Player | undefined;
   onReorder: (order: string[]) => void;
   onSkip?: (id: string) => void;
   firstLabel?: string;
+  /** Show rows in blocks of this size (one block per upcoming match). */
+  groupSize?: number;
 }) {
   const [order, setOrder] = useState(ids);
   const [dragging, setDragging] = useState(false);
@@ -227,6 +247,7 @@ function QueueList({
           index={i}
           player={get(id)}
           firstLabel={i === 0 ? firstLabel : undefined}
+          group={groupSize > 1 ? { index: Math.floor(i / groupSize), start: i % groupSize === 0, end: i % groupSize === groupSize - 1 || i === shown.length - 1 } : undefined}
           onDragStart={() => {
             setOrder(ids);
             setDragging(true);
@@ -247,15 +268,19 @@ function QueueRow(props: {
   index: number;
   player?: Player;
   firstLabel?: string;
+  group?: { index: number; start: boolean; end: boolean };
   onDragStart: () => void;
   onDragEnd: () => void;
   onSkip?: () => void;
 }) {
   const controls = useDragControls();
+  const g = props.group;
+  const label = g ? (g.index === 0 ? 'Next match' : g.index === 1 ? 'After that' : `In ${g.index + 1} matches`) : undefined;
   return (
     <Reorder.Item
       value={props.id}
-      className="queue__row"
+      className={`queue__row${g ? ` queue__row--grouped queue__row--g${g.index % 2}${g.start ? ' queue__row--gstart' : ''}${g.end ? ' queue__row--gend' : ''}` : ''}`}
+      data-label={g?.start ? label : undefined}
       dragListener={false}
       dragControls={controls}
       onDragStart={props.onDragStart}

@@ -990,3 +990,67 @@
   resize: vertical;
   margin-bottom: 8px;
 }
+
+/* ---------- match card with 3-4 fighters, grouped line ---------- */
+
+.match--many {
+  grid-template-columns: 1fr 1fr;
+}
+
+.match--many .fighter-btn {
+  min-height: 96px;
+}
+
+.queue__row--grouped {
+  border-left: 4px solid rgba(33, 212, 253, 0.35);
+}
+
+.queue__row--g1 {
+  border-left-color: rgba(255, 45, 149, 0.4);
+}
+
+.queue__row--gstart {
+  margin-top: 24px;
+}
+
+.queue__row--gstart:first-child {
+  margin-top: 20px;
+}
+
+.queue__row--gstart::before {
+  content: attr(data-label);
+  position: absolute;
+  top: -21px;
+  left: 2px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-blue);
+  letter-spacing: 0.02em;
+}
+
+/* ---------- segmented choice ---------- */
+
+.seg {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.seg__btn {
+  min-height: 48px;
+  border: 0;
+  border-radius: 11px;
+  background: none;
+  color: var(--c-textDim);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.seg__btn--on {
+  background: linear-gradient(180deg, #ff4fa8, #c3126b);
+  color: #fff;
+}

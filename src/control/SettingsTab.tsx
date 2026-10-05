@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { saveSettings, uploadPhoto } from '../data/api';
+import { saveSettings, setMatchFormat, uploadPhoto } from '../data/api';
 import { supabase } from '../data/supabase';
 import type { Settings } from '../data/types';
 import type { Live } from '../data/useSnapshot';
-import type { TicketScale } from '../rules/types';
+import type { MatchFormat, TicketScale } from '../rules/types';
 import { PhotoCropper } from '../ui/PhotoCropper';
 import { useAction } from '../ui/Toast';
 import { Toggle } from './TicketsTab';
@@ -59,6 +59,8 @@ export function SettingsTab({ live, email }: { live: Live; email: string }) {
 
   return (
     <div className="stack">
+      <FormatCard live={live} />
+
       <section className="card stack">
         <h2 className="card__title">🎂 Birthday</h2>
         {text('title', 'Title')}
@@ -131,5 +133,37 @@ export function SettingsTab({ live, email }: { live: Live; email: string }) {
         </button>
       </section>
     </div>
+  );
+}
+
+/** 1v1 or 4-player. During King of the Hill a switch is an Undo step. */
+function FormatCard({ live }: { live: Live }) {
+  const snap = live.snap!;
+  const d = live.derived!;
+  const { busy, run } = useAction();
+  const playoff = d.status === 'playoff' || d.status === 'finished';
+  const choose = (f: MatchFormat) => {
+    if (f === d.format) return;
+    void run(
+      () => setMatchFormat(snap, d, f).then(live.refresh),
+      d.status === 'koth' ? `Switched to ${f}. Undo switches back.` : `Matches will be ${f}`,
+    );
+  };
+  return (
+    <section className="card stack">
+      <h2 className="card__title">🎮 Match format</h2>
+      <div className="seg">
+        {(['4-player', '1v1'] as const).map((f) => (
+          <button key={f} className={`seg__btn${d.format === f ? ' seg__btn--on' : ''}`} disabled={busy || playoff} onClick={() => choose(f)}>
+            {f === '4-player' ? '4-player' : '1 vs 1'}
+          </button>
+        ))}
+      </div>
+      <p className="muted small">
+        {playoff
+          ? 'Playoff games are always 1 vs 1.'
+          : '4-player: the king plays the next 3 in line, the winner stays king. Switch only between matches; Undo can switch it back.'}
+      </p>
+    </section>
   );
 }

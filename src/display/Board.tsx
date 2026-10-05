@@ -25,23 +25,9 @@ export function Board({ m, fx }: { m: BoardModel; fx?: EffectsState }) {
         </section>
 
         <aside className="side">
-          {!playoff && (
-            <section className="panel upnext">
-              <h2 className="panel__title">Up Next</h2>
-              <ol className="upnext__list">
-                {m.queue.slice(m.status === 'koth' ? 1 : 0, (m.status === 'koth' ? 1 : 0) + 3).map((p, i) => (
-                  <li key={p.id} className="upnext__item">
-                    <span className="upnext__num">{i + 1}</span>
-                    <Avatar player={p} />
-                    <span className="upnext__name">{p.name}</span>
-                  </li>
-                ))}
-                {m.queue.length <= (m.status === 'koth' ? 1 : 0) && <li className="upnext__empty">Everyone's played!</li>}
-              </ol>
-            </section>
-          )}
+          {!playoff && <UpNext m={m} />}
           {playoff && <MiniStandings m={m} />}
-          <Rules />
+          <Rules format={m.format} />
         </aside>
       </main>
     </div>
@@ -74,6 +60,28 @@ function MiniStandings({ m }: { m: BoardModel }) {
             <span className="upnext__wins">{p.wins}</span>
           </li>
         ))}
+      </ol>
+    </section>
+  );
+}
+
+/** 1v1: the next three kids. 4-player: the next group of 3, as one match. */
+function UpNext({ m }: { m: BoardModel }) {
+  const playing = m.status === 'koth' ? m.challengers.length : 0;
+  const group = m.format === '4-player' && playing > 1;
+  const next = m.queue.slice(playing, playing + 3);
+  return (
+    <section className={`panel upnext${group ? ' upnext--group' : ''}`}>
+      <h2 className="panel__title">{group ? 'Next Match' : 'Up Next'}</h2>
+      <ol className="upnext__list">
+        {next.map((p, i) => (
+          <li key={p.id} className="upnext__item">
+            {!group && <span className="upnext__num">{i + 1}</span>}
+            <Avatar player={p} />
+            <span className="upnext__name">{p.name}</span>
+          </li>
+        ))}
+        {next.length === 0 && <li className="upnext__empty">Everyone's up!</li>}
       </ol>
     </section>
   );

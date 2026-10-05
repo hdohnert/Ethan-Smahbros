@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { replay } from '../rules/replay';
 import type { Derived, RulesEvent } from '../rules/types';
 import { supabase } from './supabase';
-import { withDefaults, type Snapshot } from './types';
+import { replayOptions, withDefaults, type Snapshot } from './types';
 
 export type Source = { kind: 'owner' } | { kind: 'token'; token: string };
 
@@ -127,7 +127,7 @@ export function useSnapshot(src: Source | null): Live {
   }, [srcKey, load]);
 
   const derived = useMemo(
-    () => (snap ? replay(snap.tournament, snap.players, snap.events as RulesEvent[]) : null),
+    () => (snap ? replay(snap.tournament, snap.players, snap.events as RulesEvent[], replayOptions(snap.settings)) : null),
     [snap],
   );
   const balances = useMemo(

@@ -2,7 +2,7 @@
 // (or from sample data when Supabase isn't set up yet).
 
 import { emptyStats } from '../rules/replay';
-import type { Derived, SeriesId } from '../rules/types';
+import type { Derived, MatchFormat, SeriesId } from '../rules/types';
 import { DEFAULT_SETTINGS, type Settings, type Snapshot } from '../data/types';
 import { theme } from '../theme';
 
@@ -44,6 +44,9 @@ export interface BoardModel {
   roster: BoardPlayer[];
   king: BoardPlayer | null;
   challenger: BoardPlayer | null;
+  /** Everyone facing the king next (1 in 1v1, up to 3 in 4-player). */
+  challengers: BoardPlayer[];
+  format: MatchFormat;
   queue: BoardPlayer[];
   bracket: { semi1: BoardSeries; semi2: BoardSeries; final: BoardSeries } | null;
   currentSeries: SeriesId | null;
@@ -88,6 +91,8 @@ export function buildModel(snap: Snapshot, d: Derived, balances: Record<string, 
     roster: [...byId.values()].sort((a, b) => a.name.localeCompare(b.name)),
     king: get(d.king),
     challenger: get(d.challenger),
+    challengers: d.challengers.map(get).filter((p): p is BoardPlayer => !!p),
+    format: d.format,
     queue: d.queue.map(get).filter((p): p is BoardPlayer => !!p),
     bracket: d.bracket ? { semi1: series('semi1'), semi2: series('semi2'), final: series('final') } : null,
     currentSeries: d.currentSeries?.id ?? null,

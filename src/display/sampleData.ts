@@ -47,7 +47,7 @@ export function sampleModel(): BoardModel {
     recent_tickets: [],
   };
   const t = { status: 'live' as const, starting_king_id: 'ethan', queue: ids.slice(1) };
-  const d = replay(t, players, events);
+  const d = replay(t, players, events, { defaultFormat: DEFAULT_SETTINGS.matchFormat });
   const balances = Object.fromEntries(ids.map((id) => [id, d.stats[id].played * 2 + d.stats[id].wins * 2 + (d.stats[id].bestStreak >= 3 ? 2 : 0)]));
   return buildModel(snap, d, balances);
 }

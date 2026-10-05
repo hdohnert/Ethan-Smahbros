@@ -15,7 +15,7 @@ export function MomentOverlay({ m, fx, reduced }: { m: BoardModel; fx: EffectsSt
   if (mo) {
     const e = mo.effect;
     if (e.type === 'newKing') body = <Slam reduced={reduced} kicker="👑 NEW KING 👑" player={get(e.playerId)} />;
-    else if (e.type === 'challenger') body = <YoureUp reduced={reduced} player={get(e.playerId)} />;
+    else if (e.type === 'challenger') body = <YoureUp reduced={reduced} players={e.playerIds.map(get).filter((p): p is BoardPlayer => !!p)} />;
     else if (e.type === 'bracket') body = <Slam reduced={reduced} kicker="🏆 TOP 4 PLAYOFF 🏆" title="Best of 3!" />;
     else if (e.type === 'seriesWon') body = <Slam reduced={reduced} kicker="ON TO THE FINAL!" player={get(e.playerId)} />;
     else if (e.type === 'finalIntro') body = <FinalIntro reduced={reduced} a={get(e.a)} b={get(e.b)} />;
@@ -61,21 +61,33 @@ function Slam({ kicker, title, player, reduced }: { kicker: string; title?: stri
 
 const COUNT = ['3', '2', '1', 'FIGHT!'];
 
-/** "YOU'RE UP!" with the challenger's name, then 3-2-1-FIGHT! */
-function YoureUp({ player, reduced }: { player?: BoardPlayer; reduced: boolean }) {
+/** "YOU'RE UP!" with every challenger's name, then 3-2-1-FIGHT! */
+function YoureUp({ players, reduced }: { players: BoardPlayer[]; reduced: boolean }) {
   const [step, setStep] = useState(-1);
   useEffect(() => {
-    const timers = [900, 1350, 1800, 2250].map((t, i) => window.setTimeout(() => setStep(i), t));
+    // Three names take a moment longer to read than one.
+    const base = players.length > 1 ? 1300 : 900;
+    const timers = [0, 450, 900, 1350].map((t, i) => window.setTimeout(() => setStep(i), base + t));
     return () => timers.forEach(clearTimeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  if (step < 0 || !player) {
+  if (step < 0 || !players.length) {
     return (
       <motion.div className="slam" {...slamIn(reduced)}>
         <div className="slam__kicker slam__kicker--flash">YOU'RE UP!</div>
-        {player && (
+        {players.length === 1 ? (
           <div className="slam__row">
-            <Avatar player={player} className="avatar--xl" />
-            <span className="slam__name">{player.name}</span>
+            <Avatar player={players[0]} className="avatar--xl" />
+            <span className="slam__name">{players[0].name}</span>
+          </div>
+        ) : (
+          <div className="slam__trio">
+            {players.map((p) => (
+              <div key={p.id} className="slam__trio-p">
+                <Avatar player={p} className="avatar--xl" />
+                <span>{p.name}</span>
+              </div>
+            ))}
           </div>
         )}
       </motion.div>

@@ -3,6 +3,7 @@
 // undo is just "ignore that event and replay".
 
 import { compareStandings } from './ranking';
+import { MATCH_SIZE } from './types';
 import type {
   Bracket,
   BracketPayload,
@@ -11,23 +12,34 @@ import type {
   QueuePayload,
   RulesEvent,
   RulesPlayer,
+  MatchFormat,
+  ReplayOptions,
   RulesTournament,
   Series,
   SeriesId,
   Stats,
 } from './types';
 
-export const SERIES_WINS = 2;
+/** Wins needed to take a best-of-N series. */
+export const winsNeeded = (bestOf: number) => Math.floor(Math.max(1, bestOf) / 2) + 1;
 
 export function emptyStats(): Stats {
   return { wins: 0, losses: 0, streak: 0, bestStreak: 0, played: 0, formerKing: false, giantSlayer: 0 };
 }
 
-function series(id: SeriesId, a: string | null, b: string | null): Series {
-  return { id, a, b, winsA: 0, winsB: 0, winner: null };
+function series(id: SeriesId, a: string | null, b: string | null, need: number): Series {
+  return { id, a, b, winsA: 0, winsB: 0, need, winner: null };
 }
 
-export function replay(t: RulesTournament | null, players: readonly RulesPlayer[], events: readonly RulesEvent[]): Derived {
+export function replay(
+  t: RulesTournament | null,
+  players: readonly RulesPlayer[],
+  events: readonly RulesEvent[],
+  opts: ReplayOptions = {},
+): Derived {
+  let format: MatchFormat = opts.defaultFormat ?? '1v1';
+  const semiNeed = winsNeeded(opts.semiBestOf ?? 3);
+  const finalNeed = winsNeeded(opts.finalBestOf ?? 3);
   const stats: Record<string, Stats> = {};
   const stat = (id: string) => (stats[id] ??= emptyStats());
   for (const p of players) stat(p.id);
@@ -50,7 +62,7 @@ export function replay(t: RulesTournament | null, players: readonly RulesPlayer[
       bracket: null,
       champion: null,
       lastEvent,
-    }, players);
+    }, players, format);
   }
 
   let king: string | null = t.starting_king_id && known.has(t.starting_king_id) ? t.starting_king_id : null;
@@ -62,26 +74,29 @@ export function replay(t: RulesTournament | null, players: readonly RulesPlayer[
   for (const e of live) {
     if (e.kind === 'match' && e.phase === 'koth' && status === 'koth' && e.winner_id && e.loser_id) {
       const w = e.winner_id;
-      const l = e.loser_id;
+      const losers = matchLosers(e).filter((id) => known.has(id) && id !== w);
       const ws = stat(w);
-      const ls = stat(l);
-      const loserStreakBefore = ls.streak;
+      const kingStreakBefore = king ? stat(king).streak : 0;
       ws.wins++;
       ws.played++;
       ws.streak++;
       ws.bestStreak = Math.max(ws.bestStreak, ws.streak);
-      ls.losses++;
-      ls.played++;
-      ls.streak = 0;
-
-      if (l === king) {
-        ls.formerKing = true;
-        if (loserStreakBefore >= 3) ws.giantSlayer++;
+      for (const l of losers) {
+        const ls = stat(l);
+        ls.losses++;
+        ls.played++;
+        ls.streak = 0;
       }
-      // Winner stays (or becomes) king; loser goes to the back of the line.
+      if (king && losers.includes(king)) {
+        stat(king).formerKing = true;
+        if (kingStreakBefore >= 3) ws.giantSlayer++;
+      }
+      // Winner stays (or becomes) king; losers go to the back of the line, in line order.
+      const order = [king, ...queue];
+      const backOfLine = losers.slice().sort((a, b) => order.indexOf(a) - order.indexOf(b));
       king = w;
-      queue = queue.filter((id) => id !== w && id !== l);
-      queue.push(l);
+      queue = queue.filter((id) => id !== w && !losers.includes(id));
+      queue.push(...backOfLine);
 
       if ((e.payload as MatchPayload | null)?.rest) {
         // King's rest: champion of the hill takes a break at the back of the line.
@@ -90,7 +105,9 @@ export function replay(t: RulesTournament | null, players: readonly RulesPlayer[
         king = queue.shift() ?? null;
       }
     } else if (e.kind === 'queue' && status === 'koth') {
-      const order = (e.payload as QueuePayload | null)?.order ?? [];
+      const qp = e.payload as QueuePayload | null;
+      if (qp?.format) format = qp.format;
+      const order = qp?.order ?? [];
       const known = new Set(queue);
       const next = order.filter((id) => known.has(id));
       const placed = new Set(next);
@@ -101,9 +118,9 @@ export function replay(t: RulesTournament | null, players: readonly RulesPlayer[
         status = 'playoff';
         bracket = {
           seeds,
-          semi1: series('semi1', seeds[0], seeds[3]),
-          semi2: series('semi2', seeds[1], seeds[2]),
-          final: series('final', null, null),
+          semi1: series('semi1', seeds[0], seeds[3], semiNeed),
+          semi2: series('semi2', seeds[1], seeds[2], semiNeed),
+          final: series('final', null, null, finalNeed),
         };
       }
     } else if (e.kind === 'match' && bracket && status === 'playoff' && e.phase && e.phase !== 'koth' && e.winner_id) {
@@ -112,7 +129,7 @@ export function replay(t: RulesTournament | null, players: readonly RulesPlayer[
       if (e.winner_id === s.a) s.winsA++;
       else if (e.winner_id === s.b) s.winsB++;
       else continue;
-      if (s.winsA >= SERIES_WINS || s.winsB >= SERIES_WINS) {
+      if (s.winsA >= s.need || s.winsB >= s.need) {
         s.winner = e.winner_id;
         if (s.id === 'final') {
           champion = s.winner;
@@ -130,13 +147,21 @@ export function replay(t: RulesTournament | null, players: readonly RulesPlayer[
     }
   }
 
-  return finish({ status, king, queue, stats, bracket, champion, lastEvent }, players);
+  return finish({ status, king, queue, stats, bracket, champion, lastEvent }, players, format);
+}
+
+/** All losers of a match: payload.losers for 3–4 players, else loser_id. */
+export function matchLosers(e: Pick<RulesEvent, 'loser_id' | 'payload'>): string[] {
+  const many = (e.payload as MatchPayload | null)?.losers;
+  return many?.length ? many : e.loser_id ? [e.loser_id] : [];
 }
 
 function finish(
-  d: Omit<Derived, 'challenger' | 'standings' | 'currentSeries'>,
+  d: Omit<Derived, 'challenger' | 'challengers' | 'standings' | 'currentSeries' | 'format'>,
   players: readonly RulesPlayer[],
+  format: MatchFormat,
 ): Derived {
+  const matchSize = MATCH_SIZE[format];
   const byId = new Map(players.map((p) => [p.id, p]));
   const isActive = (id: string) => byId.get(id)?.active ?? false;
   let { king, queue } = d;
@@ -167,7 +192,9 @@ function finish(
     ...d,
     king,
     queue,
+    format,
     challenger: d.status === 'koth' ? (queue[0] ?? null) : null,
+    challengers: d.status === 'koth' ? queue.slice(0, matchSize - 1) : [],
     standings,
     currentSeries,
   };

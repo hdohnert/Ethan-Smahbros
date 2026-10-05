@@ -2,7 +2,6 @@
 // records an event, and stores the awards linked to that event so undoing the
 // event removes exactly those tickets.
 
-import { SERIES_WINS } from './replay';
 import type { Derived, Series, TicketAward, TicketScale } from './types';
 
 export const DEFAULT_TICKETS: TicketScale = {
@@ -18,22 +17,23 @@ export const DEFAULT_TICKETS: TicketScale = {
 
 export const REST_STREAK = 5;
 
-/** Tickets and king's-rest decision for a King of the Hill result. */
+/** Tickets and king's-rest decision for a King of the Hill result (any number of losers). */
 export function kothResult(
   d: Derived,
   winner: string,
-  loser: string,
+  losers: string | string[],
   scale: TicketScale,
   kingsRest: boolean,
 ): { awards: TicketAward[]; rest: boolean } {
   const awards: TicketAward[] = [];
+  const all = (Array.isArray(losers) ? losers : [losers]).filter((l) => l !== winner);
   const newStreak = (d.stats[winner]?.streak ?? 0) + 1;
 
-  awards.push({ player_id: loser, amount: scale.play, reason: 'Played a match' });
+  for (const loser of all) awards.push({ player_id: loser, amount: scale.play, reason: 'Played a match' });
   awards.push({ player_id: winner, amount: scale.play + scale.win, reason: 'Won a match' });
   if (newStreak === 3 && scale.streak3) awards.push({ player_id: winner, amount: scale.streak3, reason: '3-win streak bonus' });
   if (newStreak === 5 && scale.streak5) awards.push({ player_id: winner, amount: scale.streak5, reason: '5-win streak bonus' });
-  if (loser === d.king && winner !== d.king && (d.stats[loser]?.streak ?? 0) >= 3 && scale.giantSlayer) {
+  if (d.king && all.includes(d.king) && winner !== d.king && (d.stats[d.king]?.streak ?? 0) >= 3 && scale.giantSlayer) {
     awards.push({ player_id: winner, amount: scale.giantSlayer, reason: 'Giant Slayer bonus' });
   }
   return { awards: awards.filter((a) => a.amount > 0), rest: kingsRest && newStreak >= REST_STREAK };
@@ -50,7 +50,7 @@ export function playoffGameTickets(s: Series, winner: string, scale: TicketScale
     { player_id: winner, amount: scale.play + scale.win, reason: 'Won a playoff game' },
   ];
   const wins = (winner === s.a ? s.winsA : s.winsB) + 1;
-  if (wins >= SERIES_WINS) {
+  if (wins >= s.need) {
     if (s.id === 'final') awards.push({ player_id: winner, amount: scale.champion, reason: 'Champion!' });
     else awards.push({ player_id: winner, amount: scale.final, reason: 'Reached the final' });
   }

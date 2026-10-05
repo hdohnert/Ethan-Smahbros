@@ -181,6 +181,101 @@ describe('best-of-3 completion', () => {
   });
 });
 
+describe('4-player matches', () => {
+  const opts = { defaultFormat: '4-player' as const };
+  const m4 = (winner: string, losers: string[]): RulesEvent => ({
+    id: nextId++, kind: 'match', phase: 'koth', winner_id: winner, loser_id: losers[0], payload: { losers }, undone: false,
+  });
+
+  it('the king faces the next 3 in line', () => {
+    const d = replay(T, players, [], opts);
+    expect(d.king).toBe('Ethan');
+    expect(d.challengers).toEqual(['Ava', 'Ben', 'Cal']);
+    expect(d.challenger).toBe('Ava');
+  });
+
+  it('winner is king, all losers go to the back in line order', () => {
+    const d = replay(T, players, [m4('Ben', ['Ethan', 'Ava', 'Cal'])], opts);
+    expect(d.king).toBe('Ben');
+    expect(d.queue).toEqual(['Dee', 'Ethan', 'Ava', 'Cal']);
+    expect(d.challengers).toEqual(['Dee', 'Ethan', 'Ava']);
+    expect(d.stats.Ben).toMatchObject({ wins: 1, played: 1, streak: 1 });
+    for (const id of ['Ethan', 'Ava', 'Cal']) expect(d.stats[id]).toMatchObject({ losses: 1, played: 1, streak: 0 });
+    expect(d.stats.Ethan.formerKing).toBe(true);
+  });
+
+  it('pays every loser for playing, and Giant Slayer when the king falls on a streak', () => {
+    const events = [m4('Ethan', ['Ava', 'Ben', 'Cal']), m4('Ethan', ['Dee', 'Ava', 'Ben']), m4('Ethan', ['Cal', 'Dee', 'Ava'])];
+    const d = replay(T, players, events, opts);
+    expect(d.stats.Ethan.streak).toBe(3);
+    const r = kothResult(d, 'Ben', ['Ethan', 'Cal', 'Dee'], DEFAULT_TICKETS, true);
+    expect(r.awards.filter((a) => a.reason === 'Played a match').map((a) => a.player_id)).toEqual(['Ethan', 'Cal', 'Dee']);
+    expect(r.awards).toContainEqual({ player_id: 'Ben', amount: 4, reason: 'Won a match' });
+    expect(r.awards).toContainEqual({ player_id: 'Ben', amount: 3, reason: 'Giant Slayer bonus' });
+  });
+
+  it('uses everyone who is here when fewer than 4 kids are active', () => {
+    const three = players.slice(0, 3);
+    const d = replay({ ...T, queue: ['Ava', 'Ben'] }, three, [], opts);
+    expect(d.challengers).toEqual(['Ava', 'Ben']);
+    const two = players.slice(0, 2);
+    expect(replay({ ...T, queue: ['Ava'] }, two, [], opts).challengers).toEqual(['Ava']);
+  });
+
+  it("King's Rest after 5 straight wins sends the king back and crowns the front of the line", () => {
+    const d = replay(T, players, [m4('Ethan', ['Ava', 'Ben', 'Cal']), { ...m4('Ethan', ['Dee', 'Ava', 'Ben']), payload: { losers: ['Dee', 'Ava', 'Ben'], rest: true } }], opts);
+    expect(d.king).toBe('Cal');
+    expect(d.queue).toEqual(['Dee', 'Ava', 'Ben', 'Ethan']);
+    expect(d.stats.Ethan.streak).toBe(0);
+    expect(d.stats.Ethan.bestStreak).toBe(2);
+  });
+
+  it('flags rest at the 5th straight win in 4-player', () => {
+    const wins = [
+      m4('Ethan', ['Ava', 'Ben', 'Cal']), m4('Ethan', ['Dee', 'Ava', 'Ben']), m4('Ethan', ['Cal', 'Dee', 'Ava']),
+      m4('Ethan', ['Ben', 'Cal', 'Dee']),
+    ];
+    const d = replay(T, players, wins, opts);
+    expect(kothResult(d, 'Ethan', d.challengers, DEFAULT_TICKETS, true).rest).toBe(true);
+    expect(kothResult(d, 'Ava', ['Ethan', ...d.challengers.filter((c) => c !== 'Ava')], DEFAULT_TICKETS, true).rest).toBe(false);
+  });
+
+  it('undo of a 4-player match restores everything', () => {
+    const e = m4('Dee', ['Ethan', 'Ava', 'Ben']);
+    expect(replay(T, players, [{ ...e, undone: true }], opts)).toEqual(replay(T, players, [], opts));
+  });
+});
+
+describe('format changes', () => {
+  const switchTo = (format: '1v1' | '4-player', order: string[]): RulesEvent => ({
+    id: nextId++, kind: 'queue', phase: null, winner_id: null, loser_id: null, payload: { order, format }, undone: false,
+  });
+
+  it('a format step changes who plays next, and Undo switches it back exactly', () => {
+    const e1 = m('Ethan', 'Ava');
+    const before = replay(T, players, [e1], { defaultFormat: '1v1' });
+    expect(before.challengers).toEqual(['Ben']);
+    const sw = switchTo('4-player', before.queue);
+    const after = replay(T, players, [e1, sw], { defaultFormat: '1v1' });
+    expect(after.format).toBe('4-player');
+    expect(after.challengers).toEqual(['Ben', 'Cal', 'Dee']);
+    expect(replay(T, players, [e1, { ...sw, undone: true }], { defaultFormat: '1v1' })).toEqual(before);
+  });
+
+  it('matches played in either format replay the same after a switch', () => {
+    const m4 = (winner: string, losers: string[]): RulesEvent => ({
+      id: nextId++, kind: 'match', phase: 'koth', winner_id: winner, loser_id: losers[0], payload: { losers, format: '4-player' }, undone: false,
+    });
+    const events = [m('Ethan', 'Ava'), switchTo('4-player', ['Ben', 'Cal', 'Dee', 'Ava']), m4('Cal', ['Ethan', 'Ben', 'Dee'])];
+    const d = replay(T, players, events, { defaultFormat: '1v1' });
+    expect(d.king).toBe('Cal');
+    expect(d.queue).toEqual(['Ava', 'Ethan', 'Ben', 'Dee']);
+    expect(d.stats.Ethan).toMatchObject({ wins: 1, losses: 1, played: 2 });
+    const undone = replay(T, players, [...events.slice(0, 2), { ...events[2], undone: true }], { defaultFormat: '1v1' });
+    expect(undone).toEqual(replay(T, players, events.slice(0, 2), { defaultFormat: '1v1' }));
+  });
+});
+
 describe('deleted players', () => {
   it('ignores matches and brackets that refer to a deleted player', () => {
     const events = [m('Ethan', 'Ava'), bracket(['Ethan', 'Ava', 'Ben', 'Cal'])];

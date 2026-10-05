@@ -5,6 +5,11 @@ export type Phase = 'koth' | 'semi1' | 'semi2' | 'final';
 export type SeriesId = Exclude<Phase, 'koth'>;
 export type EventKind = 'match' | 'queue' | 'bracket' | 'end';
 
+/** King of the Hill match format. */
+export type MatchFormat = '1v1' | '4-player';
+
+export const MATCH_SIZE: Record<MatchFormat, number> = { '1v1': 2, '4-player': 4 };
+
 export interface RulesPlayer {
   id: string;
   name: string;
@@ -22,10 +27,16 @@ export interface RulesTournament {
 export interface MatchPayload {
   /** King's rest: the winner (king) heads to the back of the line after this match. */
   rest?: boolean;
+  /** Every loser of a 3- or 4-player match (loser_id holds the first one). */
+  losers?: string[];
+  /** Format the match was played in. */
+  format?: MatchFormat;
 }
 export interface QueuePayload {
   order: string[];
   note?: string;
+  /** Set when this step switched the match format (so Undo switches it back). */
+  format?: MatchFormat;
 }
 export interface BracketPayload {
   seeds: string[];
@@ -59,6 +70,8 @@ export interface Series {
   b: string | null;
   winsA: number;
   winsB: number;
+  /** Wins needed to take the series (1 for best of 1, 2 for best of 3). */
+  need: number;
   winner: string | null;
 }
 
@@ -73,8 +86,13 @@ export type DerivedStatus = 'setup' | 'koth' | 'playoff' | 'finished';
 
 export interface Derived {
   status: DerivedStatus;
+  /** Format of the next King of the Hill match. */
+  format: MatchFormat;
   king: string | null;
+  /** First challenger (same as challengers[0]). */
   challenger: string | null;
+  /** Everyone facing the king in the next match (1 to 3 players). */
+  challengers: string[];
   /** Players waiting in line, front first (excludes king). */
   queue: string[];
   stats: Record<string, Stats>;
@@ -103,4 +121,12 @@ export interface TicketAward {
   player_id: string;
   amount: number;
   reason: string;
+}
+
+export interface ReplayOptions {
+  /** Format before any format-change step (from Settings). */
+  defaultFormat?: MatchFormat;
+  /** Best-of length for the semifinals and the final (1 or 3). */
+  semiBestOf?: number;
+  finalBestOf?: number;
 }

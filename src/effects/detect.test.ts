@@ -35,7 +35,7 @@ describe('detectEffects', () => {
     const e1 = m('Ethan', 'Ava');
     const fx = detectEffects(board([]), board([e1]));
     expect(fx).toContainEqual({ type: 'win', playerId: 'Ethan', gold: true });
-    expect(fx).toContainEqual({ type: 'challenger', playerId: 'Ben' });
+    expect(fx).toContainEqual({ type: 'challenger', playerIds: ['Ben'] });
     expect(types(fx)).not.toContain('newKing');
   });
 
@@ -61,7 +61,7 @@ describe('detectEffects', () => {
   });
 
   it('starting the tournament calls up the first challenger', () => {
-    expect(detectEffects(board([], 'setup'), board([], 'live'))).toEqual([{ type: 'challenger', playerId: 'Ava' }]);
+    expect(detectEffects(board([], 'setup'), board([], 'live'))).toEqual([{ type: 'challenger', playerIds: ['Ava'] }]);
   });
 
   it('bracket, series won, final intro and champion', () => {

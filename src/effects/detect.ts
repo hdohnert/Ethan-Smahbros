@@ -17,8 +17,8 @@ export function detectEffects(prev: BoardModel | null, next: BoardModel): Effect
   }
 
   // Tournament just started: call up the first challenger.
-  if (prev.status === 'setup' && next.status === 'koth' && next.challenger) {
-    out.push({ type: 'challenger', playerId: next.challenger.id });
+  if (prev.status === 'setup' && next.status === 'koth' && next.challengers.length) {
+    out.push({ type: 'challenger', playerIds: next.challengers.map((p) => p.id) });
     return out;
   }
 
@@ -29,8 +29,9 @@ export function detectEffects(prev: BoardModel | null, next: BoardModel): Effect
     const winner = next.roster.find((p) => p.wins > (before.get(p.id)?.wins ?? 0));
     if (winner) out.push({ type: 'win', playerId: winner.id, gold: isBirthday(winner) });
     if (next.king && prev.king?.id !== next.king.id) out.push({ type: 'newKing', playerId: next.king.id });
-    if (next.challenger && (next.challenger.id !== prev.challenger?.id || next.king?.id !== prev.king?.id)) {
-      out.push({ type: 'challenger', playerId: next.challenger.id });
+    const ids = next.challengers.map((p) => p.id);
+    if (ids.length && (ids.join() !== prev.challengers.map((p) => p.id).join() || next.king?.id !== prev.king?.id)) {
+      out.push({ type: 'challenger', playerIds: ids });
     }
   }
 

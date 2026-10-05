@@ -1,6 +1,6 @@
 // Row shapes as returned by get_snapshot (see supabase/schema.sql).
 
-import type { Phase, EventKind, TicketScale } from '../rules/types';
+import type { Phase, EventKind, MatchFormat, TicketScale } from '../rules/types';
 import { DEFAULT_TICKETS } from '../rules/tickets';
 import { theme } from '../theme';
 
@@ -65,6 +65,8 @@ export interface Settings {
   heroPhotoUrl: string | null;
   heroPhotoExpires: string | null;
   kingsRest: boolean;
+  /** King of the Hill format used until a format step changes it. */
+  matchFormat: MatchFormat;
   tickets: TicketScale;
   /** Control's "show Ticket Bank on the TV" switch. */
   showTicketBank: boolean;
@@ -86,6 +88,7 @@ export const DEFAULT_SETTINGS: Settings = {
   heroPhotoUrl: null,
   heroPhotoExpires: null,
   kingsRest: true,
+  matchFormat: '4-player',
   tickets: DEFAULT_TICKETS,
   showTicketBank: false,
   autoRotateBank: true,
@@ -101,6 +104,19 @@ export const DEFAULT_SETTINGS: Settings = {
   sound: false,
   demoReturnTo: null,
 };
+
+/** Rules options taken from settings (players per match, series lengths). */
+export function replayOptions(s: Settings) {
+  return { defaultFormat: s.matchFormat };
+}
+
+/** Kid-friendly rules text that matches the current settings. */
+export function rulesText(format: MatchFormat) {
+  return {
+    koth: `${format === '1v1' ? 'One on one.' : '4 players at a time: the king plus the next 3 in line.'} Win and you stay on as king. Lose and you go to the back of the line. Most wins leads!`,
+    playoff: theme.rules.playoff,
+  };
+}
 
 export function withDefaults(s: Partial<Settings> | null | undefined): Settings {
   return { ...DEFAULT_SETTINGS, ...(s ?? {}), tickets: { ...DEFAULT_TICKETS, ...(s?.tickets ?? {}) } };

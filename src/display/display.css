@@ -1277,6 +1277,60 @@
   line-height: 1.35;
 }
 
+/* ---------- 4-player stage ---------- */
+
+.stage--many {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.4vw;
+  padding: 1.4vh 1.6vw;
+}
+
+.fighter--card {
+  align-items: center;
+  text-align: center;
+  gap: 0.6vh;
+  padding: 1vh 0.6vw;
+  border-radius: 1.8vh;
+  background: rgba(0, 0, 0, 0.22);
+  border: 0.25vh solid rgba(120, 100, 255, 0.25);
+}
+
+.fighter--card.fighter--king {
+  border-color: var(--c-gold);
+  box-shadow: 0 0 2.4vh rgba(255, 200, 61, 0.3);
+}
+
+.fighter--card .fighter__name {
+  font-size: 4.6vh;
+  max-width: 100%;
+}
+
+.fighter--card .fighter__streak {
+  font-size: 3vh;
+}
+
+.fighter--card .ko-burst {
+  left: 10%;
+  top: 25%;
+  font-size: 6vh;
+}
+
+.fighter__label--blue {
+  color: var(--c-blue);
+}
+
+.fighter--card .fighter__label {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.upnext--group .upnext__list {
+  border-left: 0.5vh solid var(--c-blue);
+  padding-left: 1.4vh;
+}
+
 /* ---------- Narrower screens (iPad 4:3, 3:2) ---------- */
 
 /* Rules show one at a time on narrow screens; both fit side by side at 16:9. */
@@ -1313,6 +1367,17 @@
   }
   .fighter__name {
     font-size: 5.5vh;
+  }
+  .fighter--card .fighter__name {
+    font-size: 3.6vh;
+  }
+  .fighter--challenger-card .fighter__label {
+    visibility: hidden;
+  }
+  .stage--many .avatar--lg {
+    width: 6vh;
+    height: 6vh;
+    font-size: 3.6vh;
   }
 }
 
