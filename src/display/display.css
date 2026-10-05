@@ -880,6 +880,15 @@
   container-type: size;
 }
 
+.bank__done {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  font-family: var(--f-fun);
+  font-size: 6vh;
+  color: var(--c-gold);
+}
+
 .bank__card {
   display: flex;
   flex-direction: column;

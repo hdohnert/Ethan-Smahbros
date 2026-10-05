@@ -39,7 +39,12 @@ function OwnerStore() {
   const kids = [...live.snap.players]
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((p) => ({ ...p, balance: live.balances[p.id] ?? 0 }));
-  return <Store open={live.snap.settings.prizeStoreOpen} prizes={live.snap.settings.prizes} kids={kids} pin={null} reload={live.refresh} />;
+  return (
+    <>
+      {live.snap.settings.ticketsFrozen && <div className="frozen-banner frozen-banner--top">🔒 Tickets frozen for payout</div>}
+      <Store open={live.snap.settings.prizeStoreOpen} prizes={live.snap.settings.prizes} kids={kids} pin={null} reload={live.refresh} />
+    </>
+  );
 }
 
 function PinStore() {
@@ -48,7 +53,12 @@ function PinStore() {
     if (st.pin && !st.error) return <div className="center muted">Loading…</div>;
     return <PinGate title="🎁 Prize Store" error={st.error} onPin={st.setPin} />;
   }
-  return <Store open={st.roster.prize_store_open} prizes={st.roster.prizes} kids={st.roster.players} pin={st.pin} reload={() => st.reload()} />;
+  return (
+    <>
+      {st.roster.frozen && <div className="frozen-banner frozen-banner--top">🔒 Tickets frozen for payout</div>}
+      <Store open={st.roster.prize_store_open} prizes={st.roster.prizes} kids={st.roster.players} pin={st.pin} reload={() => st.reload()} />
+    </>
+  );
 }
 
 function Store({ open, prizes, kids, pin, reload }: { open: boolean; prizes: Prize[]; kids: Kid[]; pin: string | null; reload: () => Promise<void> }) {

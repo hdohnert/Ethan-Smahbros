@@ -112,6 +112,7 @@ function Show({
   else if (!model) content = <div className="safe start"><div className="start__hint">Loading the scoreboard…</div></div>;
   else if (view === 'end') content = <EndCard m={model} />;
   else if (view === 'bank') content = <TicketBank m={model} />;
+  else if (view === 'pickup') content = <TicketBank m={model} pickup />;
   else if (view === 'hero') content = <HeroScreen m={model} />;
   else if (view === 'rules') content = <RulesScreen m={model} />;
   else if (view === 'lrc') content = <LrcScreen m={model} />;
@@ -137,7 +138,7 @@ function Show({
   );
 }
 
-type View = 'board' | 'bank' | 'end' | 'hero' | 'rules' | 'lrc';
+type View = 'board' | 'bank' | 'end' | 'hero' | 'rules' | 'lrc' | 'pickup';
 const ATTRACT: View[] = ['hero', 'board', 'bank', 'rules'];
 
 /**
@@ -170,7 +171,11 @@ function useView(model: BoardModel | null): View {
   }, [auto, lastChange]);
 
   if (!model) return 'board';
-  if (model.settings.showTicketBank) return 'bank';
+  // A screen pinned from Control wins over everything else.
+  const pinned = model.settings.tvScreen;
+  if (pinned === 'bank' || model.settings.showTicketBank) return 'bank';
+  if (pinned === 'pickup') return 'pickup';
+  if (pinned === 'thanks') return 'end';
   if (model.settings.lrc && model.settings.lrc.tournamentId === model.tournamentId) return 'lrc';
   if (model.status === 'finished') return 'end';
   const quiet = now - lastChange;

@@ -42,7 +42,7 @@ export function Header({ m }: { m: BoardModel }) {
         <h1 className="header__title">{m.settings.title}</h1>
         <div className="header__sub">{m.settings.subtitle}</div>
       </div>
-      <div className="phase-pill">{m.phaseLabel}</div>
+      <div className="phase-pill">{m.settings.ticketsFrozen && !m.phaseLabel.startsWith('🎟️') ? '🔒 Tickets frozen' : m.phaseLabel}</div>
     </header>
   );
 }

@@ -210,6 +210,7 @@ export async function deletePlayer(id: string) {
 
 /** Everyone back to 0 tickets: the current tournament starts a fresh, empty Ticket Bank. */
 export async function resetTicketBank(snap: Snapshot) {
+  if (snap.settings.ticketsFrozen) throw new Error('Tickets are frozen for payout. Unfreeze them first.');
   await withRetry(() =>
     supabase.from('tournaments').update({ ticket_bank_id: crypto.randomUUID() }).eq('id', snap.tournament!.id),
   );
@@ -258,6 +259,23 @@ export async function awardEveryone(snap: Snapshot, playerIds: string[], amount:
     ),
   );
 }
+
+// ------------------------------------------------------------ freeze and payout
+
+/** Locks every award and undo (Control and stations) while tickets are handed out. */
+export async function setFrozen(snap: Snapshot, frozen: boolean) {
+  await saveSettings(snap, { ticketsFrozen: frozen });
+}
+
+/** Ticks a kid off the payout list (or back on). */
+export async function setPaid(snap: Snapshot, playerId: string, paid: boolean) {
+  const bank = snap.tournament!.ticket_bank_id;
+  await withRetry(() => supabase.from('payout_marks').delete().eq('bank_id', bank).eq('player_id', playerId));
+  if (paid) await withRetry(() => supabase.from('payout_marks').insert({ bank_id: bank, player_id: playerId, paid: true }));
+}
+
+/** 37 → { strips: 3, singles: 7 }: physical tickets come in strips of 10. */
+export const strips = (n: number) => ({ strips: Math.floor(Math.max(0, n) / 10), singles: Math.max(0, n) % 10 });
 
 // ------------------------------------------------------------ Left Right Center
 

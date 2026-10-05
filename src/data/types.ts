@@ -68,6 +68,9 @@ export interface LrcRound {
   tournamentId: string;
 }
 
+/** What the TV shows: Auto follows the night; the rest pin a screen. */
+export type TvScreen = 'auto' | 'bank' | 'pickup' | 'thanks';
+
 export interface Settings {
   title: string;
   subtitle: string;
@@ -98,8 +101,10 @@ export interface Settings {
   lrc: LrcRound | null;
   /** When the main session of a tournament started, set by Start Tournament. */
   sessionStart: { tournamentId: string; at: string } | null;
-  /** Control's "show Ticket Bank on the TV" switch. */
+  /** Control's "show Ticket Bank on the TV" switch (older; tvScreen replaces it). */
   showTicketBank: boolean;
+  /** Screen pinned on the TV from Control, or 'auto'. */
+  tvScreen: TvScreen;
   /** Rotate to the Ticket Bank for 15 s every 3 min between matches. */
   autoRotateBank: boolean;
   prizeStoreOpen: boolean;
@@ -131,6 +136,7 @@ export const DEFAULT_SETTINGS: Settings = {
   finalBestOf: 3,
   tickets: DEFAULT_TICKETS,
   showTicketBank: false,
+  tvScreen: 'auto',
   autoRotateBank: true,
   prizeStoreOpen: false,
   prizes: [

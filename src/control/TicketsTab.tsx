@@ -3,6 +3,7 @@ import { awardEveryone, awardTickets, resetTicketBank, saveSettings, setStationP
 import { Confirm } from '../ui/Confirm';
 import { BudgetDetails, useBudget } from './Budget';
 import { LrcCard } from './LrcCard';
+import { PayoutCard, TvScreenCard } from './PayoutCard';
 import type { Prize } from '../data/types';
 import type { Live } from '../data/useSnapshot';
 import { Avatar } from '../ui/Avatar';
@@ -26,11 +27,9 @@ export function TicketsTab({ live }: { live: Live }) {
 
       <LrcCard live={live} />
 
-      <section className="card stack">
-        <h2 className="card__title">📺 Ticket Bank on the TV</h2>
-        <Toggle label="Show Ticket Bank now" checked={s.showTicketBank} onChange={(v) => set({ showTicketBank: v })} />
-        <Toggle label="Auto-show for 15 s every 3 min" checked={s.autoRotateBank} onChange={(v) => set({ autoRotateBank: v })} />
-      </section>
+      <PayoutCard live={live} />
+
+      <TvScreenCard live={live} />
 
       <EveryoneCard live={live} />
 

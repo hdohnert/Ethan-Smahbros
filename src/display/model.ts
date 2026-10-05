@@ -55,6 +55,8 @@ export interface BoardModel {
   champion: BoardPlayer | null;
   lastEventId: number | null;
   tournamentId: string | null;
+  /** Kids already handed their physical tickets. */
+  paid: string[];
 }
 
 export function buildModel(snap: Snapshot, d: Derived, balances: Record<string, number>): BoardModel {
@@ -102,6 +104,7 @@ export function buildModel(snap: Snapshot, d: Derived, balances: Record<string, 
     champion: get(d.champion),
     lastEventId: d.lastEvent?.id ?? null,
     tournamentId: snap.tournament?.id ?? null,
+    paid: snap.paid ?? [],
   };
 }
 

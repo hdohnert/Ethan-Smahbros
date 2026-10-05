@@ -15,6 +15,9 @@ export interface RosterPlayer {
 export interface Roster {
   players: RosterPlayer[];
   prize_store_open: boolean;
+  /** Tickets locked for payout (older databases don't send it). */
+  frozen?: boolean;
+  remaining?: number;
   prizes: Prize[];
   title: string | null;
 }

@@ -53,10 +53,11 @@ function Station() {
       </header>
       <main className="c-body">
         {st.error && <div className="pill pill--offline">{st.error}</div>}
+        {st.roster.frozen && <div className="frozen-banner">🔒 Tickets frozen for payout. No more awards right now.</div>}
         <p className="muted">Tap a kid, then how many tickets.</p>
         <div className="kid-grid">
           {st.roster.players.map((p) => (
-            <button key={p.id} className="kid-btn" onClick={() => setKid(p)} disabled={busy}>
+            <button key={p.id} className="kid-btn" onClick={() => setKid(p)} disabled={busy || !!st.roster?.frozen}>
               <Avatar player={p} className="avatar--big" />
               <span className="kid-btn__name">{p.name}</span>
               <span className="kid-btn__bal">{p.balance} 🎟️</span>
