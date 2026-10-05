@@ -192,6 +192,19 @@ export const DEFAULT_SETTINGS: Settings = {
   demoReturnTo: null,
 };
 
+export function sessionStartMs(snap: Snapshot): number | null {
+  const s = snap.settings.sessionStart;
+  return s && s.tournamentId === snap.tournament?.id ? Date.parse(s.at) : null;
+}
+
+/** When the session clock started: Start Tournament, else the first match (older tournaments). */
+export function clockStartMs(snap: Snapshot): number | null {
+  const set = sessionStartMs(snap);
+  if (set) return set;
+  const first = snap.events.filter((e) => !e.undone && e.kind === 'match' && e.phase === 'koth').map((e) => Date.parse(e.created_at));
+  return first.length ? Math.min(...first) : null;
+}
+
 /** Rules options taken from settings (players per match, series lengths). */
 export function replayOptions(s: Settings) {
   return { defaultFormat: s.matchFormat, semiBestOf: s.semiBestOf, finalBestOf: s.finalBestOf };

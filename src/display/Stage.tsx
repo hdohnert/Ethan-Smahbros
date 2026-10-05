@@ -23,10 +23,7 @@ export function Stage({ m, fx }: { m: BoardModel; fx?: EffectsState }) {
           <div className="fighter__label">👑 King</div>
           <Avatar player={king} className="avatar--lg" />
           <span className="fighter__name">{king.name}</span>
-          <div className="fighter__streak">
-            {fire !== 'none' && <span className={`fire fire--${fire}`}>🔥</span>}
-            {king.streak} streak
-          </div>
+          <StreakMeter streak={king.streak} />
           {ko(king.id) && <span className="ko-burst">K.O.!</span>}
         </div>
         {challengers.map((c) => (
@@ -46,10 +43,7 @@ export function Stage({ m, fx }: { m: BoardModel; fx?: EffectsState }) {
           <span className="fighter__name">{king.name}</span>
         </div>
         {ko(king.id) && <span className="ko-burst">K.O.!</span>}
-        <div className="fighter__streak">
-          {fire !== 'none' && <span className={`fire fire--${fire}`}>🔥</span>}
-          {king.streak} win streak
-        </div>
+        <StreakMeter streak={king.streak} />
       </div>
       <div className="stage__vs">VS</div>
       <div className={`fighter fighter--challenger${ko(challenger.id)}`}>
@@ -76,6 +70,21 @@ function ChallengerCard({ p, koClass }: { p: BoardPlayer; koClass: string }) {
         {p.wins} {p.wins === 1 ? 'win' : 'wins'}
       </div>
       {koClass && <span className="ko-burst">K.O.!</span>}
+    </div>
+  );
+}
+
+/** Five flames that fill with the king's streak: ON FIRE at 3, UNSTOPPABLE at 5. */
+function StreakMeter({ streak }: { streak: number }) {
+  const level = streak >= 5 ? 'big' : streak >= 3 ? 'on' : 'none';
+  return (
+    <div className={`streak streak--${level}`}>
+      <div className="streak__pips" aria-hidden>
+        {Array.from({ length: 5 }, (_, i) => (
+          <span key={i} className={i < streak ? 'streak__pip streak__pip--on' : 'streak__pip'} />
+        ))}
+      </div>
+      <div className="streak__label">{level === 'big' ? '⚡ UNSTOPPABLE' : level === 'on' ? '🔥 ON FIRE' : `${streak} win streak`}</div>
     </div>
   );
 }

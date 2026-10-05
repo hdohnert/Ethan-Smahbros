@@ -30,6 +30,28 @@ function noise(ctx: AudioContext, start: number, dur: number, gain = 0.3) {
 
 export type Sound = 'ko' | 'newKing' | 'champion';
 
+/** Happy Birthday: [frequency, beats] per note, one line per lyric line. */
+export const BIRTHDAY_LINES: [number, number][][] = [
+  [[392, 0.75], [392, 0.25], [440, 1], [392, 1], [523, 1], [494, 2]],
+  [[392, 0.75], [392, 0.25], [440, 1], [392, 1], [587, 1], [523, 2]],
+  [[392, 0.75], [392, 0.25], [784, 1], [659, 1], [523, 1], [494, 1], [440, 2]],
+  [[698, 0.75], [698, 0.25], [659, 1], [523, 1], [587, 1], [523, 2]],
+];
+export const BIRTHDAY_BEAT = 0.6;
+
+/** Plays the tune once, starting `delay` seconds from now. */
+export function playBirthday(delay = 0) {
+  const ctx = getAudioContext();
+  if (!ctx || ctx.state !== 'running') return;
+  let t = ctx.currentTime + 0.05 + delay;
+  for (const line of BIRTHDAY_LINES) {
+    for (const [f, beats] of line) {
+      tone(ctx, f, t, beats * BIRTHDAY_BEAT * 0.9, 'triangle', 0.25);
+      t += beats * BIRTHDAY_BEAT;
+    }
+  }
+}
+
 export function play(sound: Sound) {
   const ctx = getAudioContext();
   if (!ctx || ctx.state !== 'running') return;

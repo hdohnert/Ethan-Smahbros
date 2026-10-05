@@ -16,7 +16,8 @@ import { LrcScreen } from './LrcScreen';
 import { PrizeScreen } from './PrizeScreen';
 import { SmashRulesScreen } from './SmashRulesScreen';
 import { ATTRACT_AFTER_MS, ATTRACT_SLIDE_MS } from '../effects/config';
-import { Kickoff, MomentOverlay } from '../effects/Overlays';
+import { HypeWord, Kickoff, MomentOverlay, TicketShower } from '../effects/Overlays';
+import { FiveMinuteAlert, SingOverlay } from '../effects/Party';
 import { useEffectsEngine } from '../effects/useEffectsEngine';
 import { useReducedMotion } from '../effects/useReducedMotion';
 import './display.css';
@@ -126,7 +127,11 @@ function Show({
     <div className={`display${idle ? ' display--idle' : ''}${fx.shake ? ' display--shake' : ''}`}>
       <div className="starfield" aria-hidden />
       {content}
+      {started && model && view === 'board' && <HypeWord fx={fx} reduced={reduced} />}
+      {started && model && <TicketShower fx={fx} />}
       {started && model && <MomentOverlay m={model} fx={fx} reduced={reduced} />}
+      {started && model && <FiveMinuteAlert m={model} reduced={reduced} />}
+      {started && model && <SingOverlay m={model} reduced={reduced} />}
       {kickoff && <Kickoff m={model} reduced={reduced} onDone={endKickoff} />}
       {showStatus && (
         <div className="status-pill">

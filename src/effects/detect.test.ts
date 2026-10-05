@@ -35,7 +35,9 @@ describe('detectEffects', () => {
     const e1 = m('Ethan', 'Ava');
     const fx = detectEffects(board([]), board([e1]));
     expect(fx).toContainEqual({ type: 'win', playerId: 'Ethan', gold: true });
-    expect(fx).toContainEqual({ type: 'challenger', playerIds: ['Ben'] });
+    expect(fx).toContainEqual({ type: 'challenger', playerIds: ['Ben'], kingId: 'Ethan' });
+    expect(types(fx)).toContain('hype');
+    expect(fx).toContainEqual({ type: 'firstWin', playerId: 'Ethan' });
     expect(types(fx)).not.toContain('newKing');
   });
 
@@ -61,13 +63,13 @@ describe('detectEffects', () => {
   });
 
   it('starting the tournament calls up the first challenger', () => {
-    expect(detectEffects(board([], 'setup'), board([], 'live'))).toEqual([{ type: 'challenger', playerIds: ['Ava'] }]);
+    expect(detectEffects(board([], 'setup'), board([], 'live'))).toEqual([{ type: 'challenger', playerIds: ['Ava'], kingId: 'Ethan' }]);
   });
 
   it('bracket, series won, final intro and champion', () => {
     const seeds = ['Ethan', 'Ava', 'Ben', 'Cal'];
     const b = bracket(seeds);
-    expect(types(detectEffects(board([]), board([b])))).toEqual(['bracket']);
+    expect(detectEffects(board([]), board([b]))).toEqual([{ type: 'bracket', seeds }]);
 
     const s1 = [b, m('Ethan', 'Cal', 'semi1')];
     const s2 = [...s1, m('Ethan', 'Cal', 'semi1')];
@@ -81,5 +83,31 @@ describe('detectEffects', () => {
     const s5 = [...s4, m('Ethan', 'Ava', 'final')];
     const s6 = [...s5, m('Ethan', 'Ava', 'final')];
     expect(detectEffects(board(s5), board(s6))).toContainEqual({ type: 'champion', playerId: 'Ethan', birthday: true });
+  });
+
+  it('streaks: ON FIRE at 3, then an UPSET siren when that king falls', () => {
+    const e = [m('Ethan', 'Ava'), m('Ethan', 'Ben')];
+    const third = m('Ethan', 'Cal');
+    expect(detectEffects(board(e), board([...e, third]))).toContainEqual({ type: 'streak', playerId: 'Ethan', streak: 3 });
+    const upset = m('Dee', 'Ethan');
+    const fx = detectEffects(board([...e, third]), board([...e, third, upset]));
+    expect(fx).toContainEqual({ type: 'upset', playerId: 'Dee', kingId: 'Ethan', streak: 3 });
+    expect(types(fx).indexOf('upset')).toBeLessThan(types(fx).indexOf('newKing'));
+    // A king on a short streak losing is not an upset.
+    expect(types(detectEffects(board([]), board([m('Ava', 'Ethan')])))).not.toContain('upset');
+  });
+
+  it('a big award rains tickets', () => {
+    expect(types(detectEffects(board([], 'live', { Ava: 0 }), board([], 'live', { Ava: 25 })))).toContain('shower');
+    expect(types(detectEffects(board([], 'live', { Ava: 0 }), board([], 'live', { Ava: 5 })))).not.toContain('shower');
+  });
+
+  it('Left Right Center: a table winner hits the JACKPOT', () => {
+    const round = { id: 'r', name: 'LRC', ticketsEach: 3, tables: [['Ava', 'Ben']], winners: {}, tournamentId: 't' };
+    const a = board([]);
+    const b = board([]);
+    const prev = { ...a, settings: { ...a.settings, lrc: round } };
+    const next = { ...b, settings: { ...b.settings, lrc: { ...round, winners: { 0: { playerId: 'Ben', ticketId: 'x', amount: 6 } } } } };
+    expect(detectEffects(prev, next)).toContainEqual({ type: 'jackpot', playerId: 'Ben', amount: 6 });
   });
 });

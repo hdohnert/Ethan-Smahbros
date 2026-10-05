@@ -167,18 +167,7 @@ export async function setupTournament(t: Tournament, patch: Partial<Pick<Tournam
 }
 
 /** Start time of the current tournament's main session (ms), or null. */
-export function sessionStartMs(snap: Snapshot): number | null {
-  const s = snap.settings.sessionStart;
-  return s && s.tournamentId === snap.tournament?.id ? Date.parse(s.at) : null;
-}
-
-/** When the session clock started: Start Tournament, else the first match (older tournaments). */
-export function clockStartMs(snap: Snapshot): number | null {
-  const set = sessionStartMs(snap);
-  if (set) return set;
-  const first = snap.events.filter((e) => !e.undone && e.kind === 'match' && e.phase === 'koth').map((e) => Date.parse(e.created_at));
-  return first.length ? Math.min(...first) : null;
-}
+export { sessionStartMs, clockStartMs } from './types';
 
 /** King of the Hill matches played so far. */
 export const kothMatchCount = (snap: Snapshot) => snap.events.filter((e) => !e.undone && e.kind === 'match' && e.phase === 'koth').length;

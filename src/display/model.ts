@@ -3,7 +3,7 @@
 
 import { emptyStats } from '../rules/replay';
 import type { Derived, MatchFormat, SeriesId } from '../rules/types';
-import { DEFAULT_SETTINGS, type Settings, type Snapshot } from '../data/types';
+import { DEFAULT_SETTINGS, clockStartMs, type Settings, type Snapshot } from '../data/types';
 import { theme } from '../theme';
 
 export interface BoardPlayer {
@@ -57,6 +57,8 @@ export interface BoardModel {
   tournamentId: string | null;
   /** Kids already handed their physical tickets. */
   paid: string[];
+  /** When the main session clock started (ms), or null before the first match. */
+  clockStart: number | null;
 }
 
 export function buildModel(snap: Snapshot, d: Derived, balances: Record<string, number>): BoardModel {
@@ -105,6 +107,7 @@ export function buildModel(snap: Snapshot, d: Derived, balances: Record<string, 
     lastEventId: d.lastEvent?.id ?? null,
     tournamentId: snap.tournament?.id ?? null,
     paid: snap.paid ?? [],
+    clockStart: clockStartMs(snap),
   };
 }
 

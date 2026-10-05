@@ -6,6 +6,7 @@ import { formatClock, sessionClock } from '../rules/session';
 import { Avatar } from '../ui/Avatar';
 import { useAction } from '../ui/Toast';
 import { useBudget } from './Budget';
+import { SING_MS } from '../effects/config';
 
 function useNow(ms: number) {
   const [now, setNow] = useState(() => Date.now());
@@ -128,5 +129,3 @@ export function SingCard({ live }: { live: Live }) {
     </section>
   );
 }
-
-export const SING_MS = 60_000;

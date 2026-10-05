@@ -14,11 +14,16 @@ export function MomentOverlay({ m, fx, reduced }: { m: BoardModel; fx: EffectsSt
   let body: React.ReactNode = null;
   if (mo) {
     const e = mo.effect;
+    const name = (id: string) => get(id)?.name ?? '';
     if (e.type === 'newKing') body = <Slam reduced={reduced} kicker="👑 NEW KING 👑" player={get(e.playerId)} />;
-    else if (e.type === 'challenger') body = <YoureUp reduced={reduced} players={e.playerIds.map(get).filter((p): p is BoardPlayer => !!p)} />;
-    else if (e.type === 'bracket') body = <Slam reduced={reduced} kicker="🏆 TOP 4 PLAYOFF 🏆" title="Best of 3!" />;
+    else if (e.type === 'upset') body = <Upset reduced={reduced} player={get(e.playerId)} king={name(e.kingId)} streak={e.streak} />;
+    else if (e.type === 'firstWin') body = <Slam reduced={reduced} kicker="⭐ FIRST WIN! ⭐" player={get(e.playerId)} />;
+    else if (e.type === 'streak') body = <Slam reduced={reduced} kicker={e.streak >= 5 ? '⚡ UNSTOPPABLE! ⚡' : '🔥 ON FIRE! 🔥'} title={`${e.streak} in a row!`} player={get(e.playerId)} />;
+    else if (e.type === 'challenger') body = <YoureUp reduced={reduced} king={e.kingId ? get(e.kingId) : undefined} players={e.playerIds.map(get).filter((p): p is BoardPlayer => !!p)} />;
+    else if (e.type === 'bracket') body = <BracketReveal reduced={reduced} seeds={e.seeds.map(get)} m={m} />;
     else if (e.type === 'seriesWon') body = <Slam reduced={reduced} kicker="ON TO THE FINAL!" player={get(e.playerId)} />;
     else if (e.type === 'finalIntro') body = <FinalIntro reduced={reduced} a={get(e.a)} b={get(e.b)} />;
+    else if (e.type === 'jackpot') body = <Slam reduced={reduced} kicker="💰 JACKPOT! 💰" title={`+${e.amount} tickets!`} player={get(e.playerId)} />;
     else if (e.type === 'champion') body = <Champion m={m} reduced={reduced} player={get(e.playerId)} birthday={e.birthday} />;
   }
   return (
@@ -61,42 +66,158 @@ function Slam({ kicker, title, player, reduced }: { kicker: string; title?: stri
 
 const COUNT = ['3', '2', '1', 'FIGHT!'];
 
-/** "YOU'RE UP!" with every challenger's name, then 3-2-1-FIGHT! */
-function YoureUp({ players, reduced }: { players: BoardPlayer[]; reduced: boolean }) {
+/** Fighter intro cards (king + challengers with tonight's stats), then 3-2-1-FIGHT! */
+function YoureUp({ players, king, reduced }: { players: BoardPlayer[]; king?: BoardPlayer; reduced: boolean }) {
   const [step, setStep] = useState(-1);
+  const fighters = king ? [king, ...players.filter((p) => p.id !== king.id)] : players;
   useEffect(() => {
-    // Three names take a moment longer to read than one.
-    const base = players.length > 1 ? 1300 : 900;
+    // Cards slide in one by one; more cards take a moment longer to read.
+    const base = 900 + fighters.length * 350;
     const timers = [0, 450, 900, 1350].map((t, i) => window.setTimeout(() => setStep(i), base + t));
     return () => timers.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  if (step < 0 || !players.length) {
+  if (step < 0 || !fighters.length) {
     return (
-      <motion.div className="slam" {...slamIn(reduced)}>
-        <div className="slam__kicker slam__kicker--flash">YOU'RE UP!</div>
-        {players.length === 1 ? (
-          <div className="slam__row">
-            <Avatar player={players[0]} className="avatar--xl" />
-            <span className="slam__name">{players[0].name}</span>
-          </div>
-        ) : (
-          <div className="slam__trio">
-            {players.map((p) => (
-              <div key={p.id} className="slam__trio-p">
-                <Avatar player={p} className="avatar--xl" />
-                <span>{p.name}</span>
+      <div className="intro">
+        <motion.div className="slam__kicker slam__kicker--flash" {...slamIn(reduced)}>
+          {players.length > 1 ? "HERE COME THE FIGHTERS!" : "YOU'RE UP!"}
+        </motion.div>
+        <div className="intro__cards">
+          {fighters.map((p, i) => (
+            <motion.div
+              key={p.id}
+              className={`intro__card${king && p.id === king.id ? ' intro__card--king' : ''}`}
+              {...(reduced
+                ? { initial: { opacity: 0 }, animate: { opacity: 1 } }
+                : { initial: { y: '40vh', opacity: 0, rotate: i % 2 ? 8 : -8 }, animate: { y: 0, opacity: 1, rotate: 0 }, transition: { type: 'spring' as const, stiffness: 160, damping: 15, delay: 0.15 + i * 0.3 } })}
+            >
+              <div className="intro__tag">{king && p.id === king.id ? '👑 KING' : 'CHALLENGER'}</div>
+              <Avatar player={p} className="avatar--xl" />
+              <div className="intro__name">{p.name}</div>
+              <div className="intro__stats">
+                <span>
+                  <b>{p.wins}</b> {p.wins === 1 ? 'win' : 'wins'}
+                </span>
+                {p.streak > 0 && (
+                  <span>
+                    🔥 <b>{p.streak}</b>
+                  </span>
+                )}
               </div>
-            ))}
-          </div>
-        )}
-      </motion.div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
     );
   }
   return (
     <motion.div key={step} className={`count${step === 3 ? ' count--fight' : ''}`} {...slamIn(reduced)}>
       {COUNT[step]}
     </motion.div>
+  );
+}
+
+/** 🚨 UPSET! The king on a hot streak just got knocked off. */
+function Upset({ player, king, streak, reduced }: { player?: BoardPlayer; king: string; streak: number; reduced: boolean }) {
+  return (
+    <div className={`upset${reduced ? ' upset--calm' : ''}`}>
+      <div className="upset__siren" aria-hidden>
+        🚨
+      </div>
+      <motion.div className="upset__title" {...slamIn(reduced)}>
+        UPSET!
+      </motion.div>
+      {player && (
+        <div className="slam__row">
+          <Avatar player={player} className="avatar--xl" />
+          <span className="slam__name">{player.name}</span>
+        </div>
+      )}
+      <div className="upset__sub">
+        ended {king}'s {streak}-win streak!
+      </div>
+    </div>
+  );
+}
+
+/** Top 4 revealed one at a time, #4 up to #1, then the playoff banner. */
+function BracketReveal({ seeds, m, reduced }: { seeds: (BoardPlayer | undefined)[]; m: BoardModel; reduced: boolean }) {
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    const timers = [1, 2, 3, 4, 5].map((n) => window.setTimeout(() => setShown(n), n * 1150));
+    return () => timers.forEach(clearTimeout);
+  }, []);
+  const order = [3, 2, 1, 0];
+  return (
+    <div className="reveal">
+      <motion.div className="reveal__title" {...slamIn(reduced)}>
+        {shown >= 5 ? '🏆 TOP 4 PLAYOFF 🏆' : 'And the Top 4 are…'}
+      </motion.div>
+      <div className="reveal__row">
+        {order.map((i, n) => {
+          const p = seeds[i];
+          const on = shown > n;
+          return (
+            <div key={i} className={`reveal__slot${on ? ' reveal__slot--on' : ''}${i === 0 ? ' reveal__slot--one' : ''}`}>
+              <div className="reveal__seed">#{i + 1}</div>
+              {on && p ? (
+                <motion.div className="reveal__p" {...slamIn(reduced)}>
+                  <Avatar player={p} className="avatar--xl" />
+                  <span>{p.name}</span>
+                  <small>{p.wins} wins</small>
+                </motion.div>
+              ) : (
+                <div className="reveal__q">?</div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {shown >= 5 && (
+        <div className="reveal__sub">
+          Semis: #1 vs #4 and #2 vs #3 · {m.settings.semiBestOf <= 1 ? 'winner advances' : `best of ${m.settings.semiBestOf}`}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Comic hype word (BOOM!, SMASHED!) popping over the board after a win. */
+export function HypeWord({ fx, reduced }: { fx: EffectsState; reduced: boolean }) {
+  return (
+    <AnimatePresence>
+      {fx.hype && (
+        <motion.div
+          key={fx.hype.key}
+          className="hype"
+          aria-hidden
+          initial={reduced ? { opacity: 0 } : { scale: 0.2, rotate: -20, opacity: 0 }}
+          animate={reduced ? { opacity: 1 } : { scale: 1, rotate: -8, opacity: 1 }}
+          exit={{ opacity: 0, scale: reduced ? 1 : 1.4 }}
+          transition={{ type: 'spring', stiffness: 500, damping: 14 }}
+        >
+          {fx.hype.word}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/** Tickets raining down the whole screen for a big payout. */
+export function TicketShower({ fx }: { fx: EffectsState }) {
+  if (fx.shower == null) return null;
+  return (
+    <div className="shower" key={fx.shower} aria-hidden>
+      {Array.from({ length: 36 }, (_, i) => (
+        <span
+          key={i}
+          style={{ left: `${(i * 37) % 100}%`, animationDelay: `${(i % 9) * 0.17}s`, animationDuration: `${1.3 + ((i * 7) % 5) * 0.15}s` }}
+        >
+          🎟️
+        </span>
+      ))}
+    </div>
   );
 }
 

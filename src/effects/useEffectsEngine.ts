@@ -10,7 +10,10 @@ import { detectEffects } from './detect';
 import { play } from './sound';
 import type { Effect } from './types';
 
-export type Moment = Extract<Effect, { type: 'newKing' | 'challenger' | 'bracket' | 'seriesWon' | 'finalIntro' | 'champion' }>;
+export type Moment = Extract<
+  Effect,
+  { type: 'upset' | 'newKing' | 'firstWin' | 'streak' | 'challenger' | 'bracket' | 'seriesWon' | 'finalIntro' | 'jackpot' | 'champion' }
+>;
 
 export interface EffectsState {
   /** Player ids whose names flash K.O. right now. */
@@ -20,9 +23,13 @@ export interface EffectsState {
   /** The big moment on screen now, with a unique key. */
   moment: { effect: Moment; key: number } | null;
   shake: boolean;
+  /** Comic hype word popping over the stage. */
+  hype: { word: string; key: number } | null;
+  /** Ticket rain in progress (its key), or null. */
+  shower: number | null;
 }
 
-const BIG = new Set(['newKing', 'challenger', 'bracket', 'seriesWon', 'finalIntro', 'champion']);
+const BIG = new Set(['upset', 'newKing', 'firstWin', 'streak', 'challenger', 'bracket', 'seriesWon', 'finalIntro', 'jackpot', 'champion']);
 
 export function useEffectsEngine(model: BoardModel | null, active: boolean, reduced: boolean): EffectsState {
   const prev = useRef<BoardModel | null>(null);
@@ -31,6 +38,8 @@ export function useEffectsEngine(model: BoardModel | null, active: boolean, redu
   const [tickets, setTickets] = useState<EffectsState['tickets']>({});
   const [moment, setMoment] = useState<EffectsState['moment']>(null);
   const [shake, setShake] = useState(false);
+  const [hype, setHype] = useState<EffectsState['hype']>(null);
+  const [shower, setShower] = useState<number | null>(null);
   const busy = useRef(false);
   const seq = useRef(0);
   const sound = model?.settings.sound ?? false;
@@ -58,7 +67,16 @@ export function useEffectsEngine(model: BoardModel | null, active: boolean, redu
       window.setTimeout(() => cannons(e.birthday), 1800);
       window.setTimeout(() => cannons(e.birthday), 4000);
     }
-    if (e.type === 'seriesWon' || e.type === 'bracket') burst({ count: 60, y: 0.5 });
+    if (e.type === 'upset') {
+      if (sound) play('newKing');
+      if (!reduced) {
+        setShake(true);
+        window.setTimeout(() => setShake(false), 700);
+      }
+    }
+    if (e.type === 'seriesWon' || e.type === 'firstWin') burst({ count: 60, y: 0.5 });
+    if (e.type === 'jackpot') burst({ gold: true, count: 120, y: 0.5 });
+    if (e.type === 'bracket') [1200, 2400, 3600, 4800].forEach((t) => window.setTimeout(() => burst({ count: 40, y: 0.45 }), t));
     window.setTimeout(next, EFFECTS[e.type].ms);
   };
 
@@ -89,6 +107,14 @@ export function useEffectsEngine(model: BoardModel | null, active: boolean, redu
           delete n[e.playerId];
           return n;
         }), EFFECTS.tickets.ms);
+      } else if (e.type === 'hype') {
+        setHype({ word: e.word, key });
+        window.setTimeout(() => setHype((h) => (h?.key === key ? null : h)), EFFECTS.hype.ms);
+      } else if (e.type === 'shower') {
+        if (!reduced) {
+          setShower(key);
+          window.setTimeout(() => setShower((k) => (k === key ? null : k)), EFFECTS.shower.ms);
+        }
       } else if (BIG.has(e.type)) {
         // A newer challenger call replaces one still waiting in line.
         if (e.type === 'challenger') queue.current = queue.current.filter((q) => q.effect.type !== 'challenger');
@@ -104,5 +130,5 @@ export function useEffectsEngine(model: BoardModel | null, active: boolean, redu
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [model, active]);
 
-  return { flashing, tickets, moment, shake };
+  return { flashing, tickets, moment, shake, hype, shower };
 }
