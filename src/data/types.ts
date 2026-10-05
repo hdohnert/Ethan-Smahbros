@@ -115,6 +115,12 @@ export interface Settings {
   ticketsFrozen: boolean;
   /** Main session length in minutes (used by the budget projection and the session clock). */
   sessionMinutes: number;
+  /** Move kids who've played 2+ games fewer than average to the front of the line. */
+  autoCatchUp: boolean;
+  /** TV: "5 minutes left" alert and a corner countdown for the last 5 minutes of the main session. */
+  tvFiveMinuteAlert: boolean;
+  /** When Control last pressed "Everybody sing!" (ms); the TV plays the birthday song screen. */
+  singAt: number | null;
   /** Left Right Center: tickets each player starts with, and players per table. */
   lrcTicketsEach: number;
   lrcTableSize: number;
@@ -164,6 +170,9 @@ export const DEFAULT_SETTINGS: Settings = {
   ticketBudget: 1000,
   ticketsFrozen: false,
   sessionMinutes: 75,
+  autoCatchUp: true,
+  tvFiveMinuteAlert: true,
+  singAt: null,
   sessionStart: null,
   lrcTicketsEach: 3,
   lrcTableSize: 5,

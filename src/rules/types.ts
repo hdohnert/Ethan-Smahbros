@@ -33,6 +33,8 @@ export interface MatchPayload {
   format?: MatchFormat;
   /** Playoff game: the series length when it was played (locks the series on its first game). */
   bestOf?: number;
+  /** Catch-up: kids who had played the least, moved to the front of the line after this match. */
+  catchUp?: string[];
 }
 export interface QueuePayload {
   order: string[];

@@ -61,6 +61,7 @@ export function SettingsTab({ live, email }: { live: Live; email: string }) {
   return (
     <div className="stack">
       <FormatCard live={live} />
+      <SessionSettingsCard live={live} />
       <PlayoffLengthCard live={live} />
       <LrcSettingsCard live={live} />
       <SmashRulesEditor live={live} />
@@ -249,6 +250,32 @@ function LrcSettingsCard({ live }: { live: Live }) {
         </button>
       )}
       <p className="muted small">Applies to the next round you start.</p>
+    </section>
+  );
+}
+
+/** Main session length, catch-up, and the TV's last-5-minutes alert. */
+function SessionSettingsCard({ live }: { live: Live }) {
+  const snap = live.snap!;
+  const s = snap.settings;
+  const { busy, run } = useAction();
+  const [mins, setMins] = useState(s.sessionMinutes);
+  const save = (patch: Partial<Settings>) => run(() => saveSettings(snap, patch).then(live.refresh), 'Saved');
+  return (
+    <section className="card stack">
+      <h2 className="card__title">⏱ Main session</h2>
+      <label className="toggle-row">
+        <span>Main session length (minutes)</span>
+        <input className="num" type="number" min={10} max={240} value={mins} onChange={(e) => setMins(Math.max(10, Math.min(240, Number(e.target.value) || 10)))} />
+      </label>
+      {mins !== s.sessionMinutes && (
+        <button className="btn btn--go" disabled={busy} onClick={() => save({ sessionMinutes: mins })}>
+          Save
+        </button>
+      )}
+      <Toggle label="Catch-up: move kids who've played 2+ fewer games up the line" checked={s.autoCatchUp} onChange={(v) => save({ autoCatchUp: v })} />
+      <Toggle label="TV: 5-minutes-left alert and countdown" checked={s.tvFiveMinuteAlert} onChange={(v) => save({ tvFiveMinuteAlert: v })} />
+      <p className="muted small">The clock starts with the first match and is shown on the Match tab. The TV only shows it for the last 5 minutes (if on).</p>
     </section>
   );
 }

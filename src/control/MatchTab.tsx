@@ -1,4 +1,5 @@
 import { Fragment, useState } from 'react';
+import { FairnessCard, SessionCard, SingCard } from './SessionCard';
 import { SmashRulesCard } from './SmashRules';
 import { Reorder, useDragControls } from 'framer-motion';
 import {
@@ -33,16 +34,19 @@ export function MatchTab({ live, demo }: { live: Live; demo: DemoControl }) {
   return (
     <div className="stack">
       {d.status === 'setup' && <Setup live={live} />}
+      {(d.status === 'koth' || d.status === 'playoff') && <SessionCard live={live} />}
       {d.status === 'koth' && (
         <>
           <KothCard live={live} />
           <UpNext live={live} />
+          <FairnessCard live={live} />
           <BracketStarter live={live} />
         </>
       )}
       {d.status === 'playoff' && <PlayoffCard live={live} />}
       {d.status === 'finished' && <FinishedCard live={live} />}
       {d.status !== 'finished' && <SmashRulesCard live={live} />}
+      <SingCard live={live} />
       {(d.status === 'koth' || d.status === 'playoff') && <EndButton live={live} />}
       <DisplayLinkCard />
       <DemoCard live={live} demo={demo} />
@@ -140,7 +144,8 @@ function KothCard({ live }: { live: Live }) {
       if (res.paid < res.wanted) {
         toast(`${get(winner)?.name} wins! Ticket budget reached: paid ${res.paid} of ${res.wanted} tickets.`, 'error');
       } else {
-        toast(`${get(winner)?.name} wins! +${won} 🎟️${res.rest ? ` · ${get(winner)?.name} takes a King's Rest` : ''}`);
+        const up = res.catchUp.map((id) => get(id)?.name).filter(Boolean).join(', ');
+        toast(`${get(winner)?.name} wins! +${won} 🎟️${res.rest ? ` · ${get(winner)?.name} takes a King's Rest` : ''}${up ? ` · ${up} moved up to catch up` : ''}`);
       }
     }
   };

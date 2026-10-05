@@ -107,6 +107,8 @@ export function replay(
         queue.push(w);
         king = queue.shift() ?? null;
       }
+      const up = ((e.payload as MatchPayload | null)?.catchUp ?? []).filter((id) => known.has(id) && id !== king);
+      if (up.length) queue = [...up, ...queue.filter((id) => !up.includes(id))];
     } else if (e.kind === 'queue' && status === 'koth') {
       const qp = e.payload as QueuePayload | null;
       if (qp?.format) format = qp.format;

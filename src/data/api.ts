@@ -2,9 +2,10 @@
 // the owner checks inside the database functions.
 
 import { replay, seedTop4 } from '../rules/replay';
+import { catchUpPicks } from '../rules/fairness';
 import { kothResult, playoffGameTickets, top4Tickets } from '../rules/tickets';
 import { makeTables, roundCost, tablePayout } from '../rules/lrc';
-import type { Derived, MatchFormat, RulesEvent, SeriesId, TicketAward } from '../rules/types';
+import type { Derived, MatchFormat, MatchPayload, RulesEvent, SeriesId, TicketAward } from '../rules/types';
 import { supabase } from './supabase';
 import { replayOptions, type LrcRound, type Player, type Settings, type Snapshot, type Tournament } from './types';
 
@@ -80,9 +81,21 @@ export async function recordKoth(snap: Snapshot, d: Derived, winner: string) {
   const t = snap.tournament!;
   const losers = matchPlayers(d).filter((id) => id !== winner);
   const { awards, rest } = kothResult(d, winner, losers, snap.settings.tickets, snap.settings.kingsRest);
-  const payload = { format: d.format, ...(rest ? { rest: true } : {}), ...(losers.length > 1 ? { losers } : {}) };
+  const payload: MatchPayload = { format: d.format, ...(rest ? { rest: true } : {}), ...(losers.length > 1 ? { losers } : {}) };
+  // Catch-up rides on the match event itself, so Undo puts the line back exactly.
+  const catchUp = snap.settings.autoCatchUp ? kothCatchUp(snap, winner, losers, payload) : [];
+  if (catchUp.length) payload.catchUp = catchUp;
   const res = await record(t, 'match', { phase: 'koth', winner, loser: losers[0], payload, tickets: awards });
-  return { awards, rest, wanted: res.wanted ?? 0, paid: res.paid ?? 0 };
+  return { awards, rest, catchUp, wanted: res.wanted ?? 0, paid: res.paid ?? 0 };
+}
+
+/** Replays the night as if this match were recorded, then picks who catches up. */
+function kothCatchUp(snap: Snapshot, winner: string, losers: string[], payload: MatchPayload): string[] {
+  const events = snap.events as RulesEvent[];
+  const id = events.reduce((n, e) => Math.max(n, e.id), 0) + 1;
+  const next: RulesEvent = { id, kind: 'match', phase: 'koth', winner_id: winner, loser_id: losers[0] ?? null, payload, undone: false };
+  const after = replay(snap.tournament, snap.players, [...events, next], replayOptions(snap.settings));
+  return catchUpPicks(after, snap.players, [winner, ...losers]);
 }
 
 export async function recordGame(snap: Snapshot, d: Derived, series: SeriesId, winner: string) {
@@ -158,6 +171,21 @@ export function sessionStartMs(snap: Snapshot): number | null {
   const s = snap.settings.sessionStart;
   return s && s.tournamentId === snap.tournament?.id ? Date.parse(s.at) : null;
 }
+
+/** When the session clock started: Start Tournament, else the first match (older tournaments). */
+export function clockStartMs(snap: Snapshot): number | null {
+  const set = sessionStartMs(snap);
+  if (set) return set;
+  const first = snap.events.filter((e) => !e.undone && e.kind === 'match' && e.phase === 'koth').map((e) => Date.parse(e.created_at));
+  return first.length ? Math.min(...first) : null;
+}
+
+/** King of the Hill matches played so far. */
+export const kothMatchCount = (snap: Snapshot) => snap.events.filter((e) => !e.undone && e.kind === 'match' && e.phase === 'koth').length;
+
+/** "Everybody sing!": the TV plays the birthday song screen. */
+export const startSing = (snap: Snapshot) => saveSettings(snap, { singAt: Date.now() });
+export const stopSing = (snap: Snapshot) => saveSettings(snap, { singAt: null });
 
 export async function restartFromScratch(snap: Snapshot, keepTickets: boolean) {
   return newTournament({
