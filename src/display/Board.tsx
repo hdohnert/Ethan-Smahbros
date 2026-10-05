@@ -6,6 +6,7 @@ import type { EffectsState } from '../effects/useEffectsEngine';
 import type { BoardModel } from './model';
 import { Rules } from './Rules';
 import { Stage } from './Stage';
+import { useLastMinutes } from '../effects/Party';
 
 export function Board({ m, fx }: { m: BoardModel; fx?: EffectsState }) {
   const playoff = m.status === 'playoff' && m.bracket;
@@ -35,6 +36,8 @@ export function Board({ m, fx }: { m: BoardModel; fx?: EffectsState }) {
 }
 
 export function Header({ m }: { m: BoardModel }) {
+  const clock = useLastMinutes(m);
+  const frozen = m.settings.ticketsFrozen && !m.phaseLabel.startsWith('🎟️');
   return (
     <header className="header">
       <Hero m={m} />
@@ -42,7 +45,11 @@ export function Header({ m }: { m: BoardModel }) {
         <h1 className="header__title">{m.settings.title}</h1>
         <div className="header__sub">{m.settings.subtitle}</div>
       </div>
-      <div className="phase-pill">{m.settings.ticketsFrozen && !m.phaseLabel.startsWith('🎟️') ? '🔒 Tickets frozen' : m.phaseLabel}</div>
+      {clock && !frozen ? (
+        <div className={`phase-pill phase-pill--clock${clock.over ? ' phase-pill--over' : ''}`}>{clock.text}</div>
+      ) : (
+        <div className="phase-pill">{frozen ? '🔒 Tickets frozen' : m.phaseLabel}</div>
+      )}
     </header>
   );
 }

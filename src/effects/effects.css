@@ -373,13 +373,13 @@
   gap: 1.6vh;
   padding: 3vh 1.5vw;
   border-radius: 3vh;
-  background: linear-gradient(160deg, rgba(33, 212, 253, 0.25), rgba(20, 14, 52, 0.95));
+  background: linear-gradient(160deg, #123a5a, #140e34);
   border: 0.4vh solid var(--c-blue);
   box-shadow: 0 0 4vh rgba(33, 212, 253, 0.45);
 }
 
 .intro__card--king {
-  background: linear-gradient(160deg, rgba(255, 200, 61, 0.3), rgba(20, 14, 52, 0.95));
+  background: linear-gradient(160deg, #4a3a10, #140e34);
   border-color: var(--c-gold);
   box-shadow: 0 0 5vh rgba(255, 200, 61, 0.6);
 }
@@ -468,6 +468,10 @@
 
 /* ---------- bracket reveal ---------- */
 
+.moment--bracket {
+  background: radial-gradient(ellipse at center, rgba(20, 10, 60, 0.9), rgba(7, 5, 26, 0.98) 70%);
+}
+
 .reveal {
   display: flex;
   flex-direction: column;
@@ -500,7 +504,7 @@
   padding: 3vh 1vw;
   border-radius: 3vh;
   border: 0.4vh dashed rgba(255, 255, 255, 0.25);
-  background: rgba(20, 14, 52, 0.7);
+  background: rgba(20, 14, 52, 0.96);
 }
 
 .reveal__slot--on {
@@ -603,24 +607,18 @@
   z-index: 10;
 }
 
-.corner-clock {
-  position: absolute;
-  z-index: 6;
-  right: max(3vw, env(safe-area-inset-right));
-  bottom: max(3vh, env(safe-area-inset-bottom));
-  padding: 1.2vh 2vw;
-  border-radius: 99px;
-  font-family: var(--f-display);
-  font-size: 4vh;
+.phase-pill.phase-pill--clock {
   color: #1a0b2e;
   background: var(--c-gold);
+  border-color: var(--c-gold);
   box-shadow: 0 0 3vh rgba(255, 200, 61, 0.7);
   animation: pulse-clock 1s ease-in-out infinite;
 }
 
-.corner-clock--over {
-  background: var(--c-pink);
+.phase-pill.phase-pill--over {
   color: #fff;
+  background: var(--c-pink);
+  border-color: var(--c-pink);
 }
 
 @keyframes pulse-clock {
@@ -706,7 +704,7 @@
 @media (prefers-reduced-motion: reduce) {
   .moment--upset,
   .upset__siren,
-  .corner-clock,
+  .phase-pill--clock,
   .sing__candles span {
     animation: none;
   }

@@ -5,6 +5,15 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import type { BoardModel } from '../display/model';
 import { formatClock, sessionClock, type ClockPhase } from '../rules/session';
+
+/** Header pill text for the last 5 minutes ("⏰ 4:32 left"), else null. */
+export function useLastMinutes(m: BoardModel): { text: string; over: boolean } | null {
+  const now = useNow(1000);
+  if (!m.settings.tvFiveMinuteAlert || m.status !== 'koth' || m.clockStart == null) return null;
+  const c = sessionClock(m.clockStart, m.settings.sessionMinutes, now);
+  if (c.phase === 'running') return null;
+  return c.phase === 'over' ? { text: '⏰ Playoffs next!', over: true } : { text: `⏰ ${formatClock(c.remainingMs)} left`, over: false };
+}
 import { SING_MS } from './config';
 import { burst, cannons } from './confetti';
 import { BIRTHDAY_BEAT, BIRTHDAY_LINES, playBirthday } from './sound';
@@ -112,9 +121,6 @@ export function FiveMinuteAlert({ m, reduced }: { m: BoardModel; reduced: boolea
   if (!c || c.phase === 'running') return null;
   return (
     <>
-      <div className={`corner-clock${c.phase === 'over' ? ' corner-clock--over' : ''}`}>
-        {c.phase === 'over' ? '⏰ Playoffs next!' : `⏰ ${formatClock(c.remainingMs)}`}
-      </div>
       <AnimatePresence>
         {banner && (
           <motion.div className="moment moment--alert" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>

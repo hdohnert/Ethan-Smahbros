@@ -478,6 +478,8 @@ export async function startDemo(snap: Snapshot) {
   await saveSettings(snap, { demoReturnTo: snap.tournament?.id ?? null });
   const t = await newTournament({ players, isDemo: true });
   const king = players.find((p) => p.name === snap.settings.birthdayName) ?? players[0];
+  // The demo runs its own session clock (the real one falls back to its first match afterwards).
+  await saveSettings(snap, { demoReturnTo: snap.tournament?.id ?? null, sessionStart: { tournamentId: t.id, at: new Date().toISOString() } });
   await startTournament(t, king.id, players.map((p) => p.id));
 }
 
