@@ -1358,3 +1358,37 @@
   font-size: 26px;
   color: var(--c-gold);
 }
+
+/* ---------- Smash rules ---------- */
+
+.smash-rules {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.smash-rules__row {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--c-panelBorder);
+  opacity: 0.65;
+}
+
+.smash-rules__row--on {
+  opacity: 1;
+  border-color: var(--c-gold);
+  background: rgba(255, 200, 61, 0.12);
+}
+
+.smash-rules__row b {
+  color: var(--c-gold);
+}
+
+.smash-edit {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--c-panelBorder);
+}

@@ -1614,3 +1614,42 @@
     animation: fade-in 0.6s ease;
   }
 }
+
+/* ---------- Smash rules screen ---------- */
+
+.smash-screen {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+  gap: 1.6vh;
+}
+
+.smash-screen__row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr);
+  align-items: center;
+  gap: 2vw;
+  padding: 1.5vh 2.5vw;
+  opacity: 0.6;
+}
+
+.smash-screen__row--on {
+  opacity: 1;
+  border-color: var(--c-gold);
+  box-shadow: 0 0 2.5vh rgba(255, 200, 61, 0.35);
+}
+
+.smash-screen__row h2 {
+  margin: 0;
+  font-family: var(--f-display);
+  font-weight: 400;
+  font-size: 3.6vh;
+  color: var(--c-gold);
+}
+
+.smash-screen__row p {
+  margin: 0;
+  font-size: 3.8vh;
+  line-height: 1.25;
+}

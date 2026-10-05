@@ -14,6 +14,7 @@ import { HeroScreen } from './HeroScreen';
 import { RulesScreen } from './RulesScreen';
 import { LrcScreen } from './LrcScreen';
 import { PrizeScreen } from './PrizeScreen';
+import { SmashRulesScreen } from './SmashRulesScreen';
 import { ATTRACT_AFTER_MS, ATTRACT_SLIDE_MS } from '../effects/config';
 import { Kickoff, MomentOverlay } from '../effects/Overlays';
 import { useEffectsEngine } from '../effects/useEffectsEngine';
@@ -117,6 +118,7 @@ function Show({
   else if (view === 'prizes') content = <PrizeScreen m={model} />;
   else if (view === 'hero') content = <HeroScreen m={model} />;
   else if (view === 'rules') content = <RulesScreen m={model} />;
+  else if (view === 'smash') content = <SmashRulesScreen m={model} />;
   else if (view === 'lrc') content = <LrcScreen m={model} />;
   else content = <Board m={model} fx={fx} />;
 
@@ -140,12 +142,12 @@ function Show({
   );
 }
 
-type View = 'board' | 'bank' | 'end' | 'hero' | 'rules' | 'lrc' | 'pickup' | 'prizes';
-const ATTRACT: View[] = ['hero', 'board', 'bank', 'rules'];
+type View = 'board' | 'bank' | 'end' | 'hero' | 'rules' | 'lrc' | 'pickup' | 'prizes' | 'smash';
+const ATTRACT: View[] = ['hero', 'board', 'bank', 'rules', 'smash'];
 
 /**
  * Which screen to show: Control's Ticket Bank switch wins, then the end card,
- * then attract mode (after a quiet minute, cycle hero → board → bank → rules),
+ * then attract mode (after a quiet minute, cycle hero → board → bank → rules → Smash rules),
  * then the 15 s Ticket Bank peek every 3 minutes, else the board.
  */
 function useView(model: BoardModel | null): View {
@@ -178,6 +180,7 @@ function useView(model: BoardModel | null): View {
   if (pinned === 'bank' || model.settings.showTicketBank) return 'bank';
   if (pinned === 'pickup') return 'pickup';
   if (pinned === 'prizes') return 'prizes';
+  if (pinned === 'smash') return 'smash';
   if (pinned === 'thanks') return 'end';
   if (model.settings.lrc && model.settings.lrc.tournamentId === model.tournamentId) return 'lrc';
   // Payout time: cycle the price board, who still needs tickets, and the thanks card.

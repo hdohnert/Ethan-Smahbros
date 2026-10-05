@@ -11,6 +11,8 @@ import { MatchTab } from './MatchTab';
 import { PlayersTab } from './PlayersTab';
 import { SettingsTab } from './SettingsTab';
 import { TicketsTab } from './TicketsTab';
+import { SmashRulesList, activeRuleKeys, useSmashReminder } from './SmashRules';
+import { Sheet } from '../ui/Confirm';
 
 const TABS = [
   { id: 'match', label: 'Match', icon: '🎮' },
@@ -70,6 +72,7 @@ export function ControlMain({ email }: { email: string }) {
 
   const demo = useDemo(snap, live.refresh);
   const budget = useBudget(live);
+  const [remind, closeRemind] = useSmashReminder(live);
 
   if (!snap || !derived || !snap.tournament) {
     return <div className="center muted">{live.error ? `Can't reach the database: ${live.error}` : 'Loading…'}</div>;
@@ -112,6 +115,14 @@ export function ControlMain({ email }: { email: string }) {
           </button>
         ))}
       </nav>
+      {remind && (
+        <Sheet title={derived.status === 'playoff' ? '🏆 Bracket time: update the Switch' : '🎮 New format: update the Switch'} onClose={closeRemind}>
+          <SmashRulesList rules={snap.settings.smashRules} active={activeRuleKeys(derived.status, derived.format)} />
+          <button className="btn btn--xl btn--go" onClick={closeRemind}>
+            Done, the Switch is set
+          </button>
+        </Sheet>
+      )}
       {demo.last && tab === 'match' && snap.tournament.is_demo && <div className="demo-ticker">{demo.last}</div>}
     </>
   );

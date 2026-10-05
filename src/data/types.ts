@@ -69,7 +69,28 @@ export interface LrcRound {
 }
 
 /** What the TV shows: Auto follows the night; the rest pin a screen. */
-export type TvScreen = 'auto' | 'bank' | 'pickup' | 'prizes' | 'thanks';
+export type TvScreen = 'auto' | 'bank' | 'pickup' | 'prizes' | 'smash' | 'thanks';
+
+/** One line of the "Smash rules to set" card. `key` marks which part of the night it is for. */
+export interface SmashRule {
+  key: 'koth4' | 'koth1' | 'playoff' | 'items';
+  mode: string;
+  settings: string;
+}
+
+/** Which rows apply right now: the current King of the Hill format, or the playoffs. */
+export function activeRuleKeys(status: string | undefined, format: string | undefined): SmashRule['key'][] {
+  if (status === 'playoff') return ['playoff', 'items'];
+  if (status === 'koth' || status === 'setup') return [format === '1v1' ? 'koth1' : 'koth4', 'items'];
+  return [];
+}
+
+export const DEFAULT_SMASH_RULES: SmashRule[] = [
+  { key: 'koth4', mode: '4-player King of the Hill', settings: '2 stocks, 3-minute time limit' },
+  { key: 'koth1', mode: '1v1 King of the Hill', settings: '1 stock, 3-minute time limit' },
+  { key: 'playoff', mode: 'Playoffs', settings: '2 stocks, 5-minute time limit, stage hazards off, Battlefield' },
+  { key: 'items', mode: 'Items and Final Smash', settings: "Kids' choice for regular play; off for playoffs" },
+];
 
 export interface Settings {
   title: string;
@@ -110,6 +131,8 @@ export interface Settings {
   prizeStoreOpen: boolean;
   /** Price board only: show prices, kids pay with physical tickets. Deduct in app: the old buy flow. */
   prizeStoreMode: 'board' | 'deduct';
+  /** What to set on the Switch for each part of the night (editable). */
+  smashRules: SmashRule[];
   prizes: Prize[];
   /** Which default prize list the saved one came from (absent = the original six). */
   prizesVersion?: number;
@@ -154,6 +177,7 @@ export const DEFAULT_SETTINGS: Settings = {
   autoRotateBank: true,
   prizeStoreOpen: false,
   prizeStoreMode: 'board',
+  smashRules: DEFAULT_SMASH_RULES,
   prizes: DEFAULT_PRIZES,
   sound: false,
   demoReturnTo: null,

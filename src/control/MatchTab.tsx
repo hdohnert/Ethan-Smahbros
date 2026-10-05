@@ -1,4 +1,5 @@
 import { Fragment, useState } from 'react';
+import { SmashRulesCard } from './SmashRules';
 import { Reorder, useDragControls } from 'framer-motion';
 import {
   endTournament,
@@ -41,6 +42,7 @@ export function MatchTab({ live, demo }: { live: Live; demo: DemoControl }) {
       )}
       {d.status === 'playoff' && <PlayoffCard live={live} />}
       {d.status === 'finished' && <FinishedCard live={live} />}
+      {d.status !== 'finished' && <SmashRulesCard live={live} />}
       {(d.status === 'koth' || d.status === 'playoff') && <EndButton live={live} />}
       <DisplayLinkCard />
       <DemoCard live={live} demo={demo} />
