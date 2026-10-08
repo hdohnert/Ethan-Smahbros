@@ -25,7 +25,11 @@ function cacheKey(src: Source) {
 function readCache(src: Source): Snapshot | null {
   try {
     const raw = localStorage.getItem(cacheKey(src));
-    return raw ? (JSON.parse(raw) as Snapshot) : null;
+    if (!raw) return null;
+    // Saved by an older version: fill in settings added since then.
+    const s = JSON.parse(raw) as Snapshot;
+    s.settings = withDefaults(s.settings);
+    return s;
   } catch {
     return null;
   }
