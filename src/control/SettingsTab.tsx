@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PhotosCard } from './PhotosCard';
 import { SmashRulesEditor } from './SmashRules';
 import { saveSettings, setMatchFormat, uploadPhoto } from '../data/api';
 import { supabase } from '../data/supabase';
@@ -65,6 +66,7 @@ export function SettingsTab({ live, email }: { live: Live; email: string }) {
       <PlayoffLengthCard live={live} />
       <LrcSettingsCard live={live} />
       <SmashRulesEditor live={live} />
+      <PhotosCard live={live} />
 
       <section className="card stack">
         <h2 className="card__title">🎂 Birthday</h2>

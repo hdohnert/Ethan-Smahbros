@@ -1500,3 +1500,42 @@
   color: #1a0b2e;
   font-weight: 800;
 }
+
+/* ---------- slideshow photos ---------- */
+
+.slides {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.slides__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.slides__thumb {
+  width: 56px;
+  height: 56px;
+  flex: none;
+  object-fit: cover;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.slides__row input {
+  min-width: 0;
+}
+
+.slides__btns {
+  display: flex;
+  gap: 4px;
+}
+
+.btn--disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}

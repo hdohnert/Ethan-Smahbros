@@ -7,7 +7,7 @@ import { kothResult, playoffGameTickets, top4Tickets } from '../rules/tickets';
 import { makeTables, roundCost, tablePayout } from '../rules/lrc';
 import type { Derived, MatchFormat, MatchPayload, RulesEvent, SeriesId, TicketAward } from '../rules/types';
 import { supabase } from './supabase';
-import { replayOptions, type LrcRound, type Player, type Settings, type Snapshot, type Tournament } from './types';
+import { replayOptions, type LrcRound, type Player, type Settings, type SlidePhoto, type Snapshot, type Tournament } from './types';
 
 export class StaleError extends Error {
   constructor() {
@@ -437,10 +437,56 @@ export async function refreshPhotoLinks(snap: Snapshot) {
     }
   }
   const s = snap.settings;
+  const patch: Partial<Settings> = {};
   if (s.heroPhotoPath && due(s.heroPhotoExpires)) {
     const { url, expires } = await signPhoto(s.heroPhotoPath);
-    await saveSettings(snap, { heroPhotoUrl: url, heroPhotoExpires: expires });
+    Object.assign(patch, { heroPhotoUrl: url, heroPhotoExpires: expires });
   }
+  if (s.photos.some((p) => due(p.expires))) patch.photos = await signSlides(s.photos);
+  if (Object.keys(patch).length) await saveSettings(snap, patch);
+}
+
+/** Fresh signed links for every slideshow photo, in one request. */
+async function signSlides(photos: SlidePhoto[]): Promise<SlidePhoto[]> {
+  if (!photos.length) return photos;
+  const rows = await withRetry<{ path: string | null; signedUrl: string }[]>(() =>
+    supabase.storage.from('photos').createSignedUrls(photos.map((p) => p.path), SIGNED_URL_SECONDS),
+  );
+  const expires = new Date(Date.now() + SIGNED_URL_SECONDS * 1000).toISOString();
+  const byPath = new Map(rows.map((r) => [r.path, r.signedUrl]));
+  return photos.map((p) => (byPath.get(p.path) ? { ...p, url: byPath.get(p.path)!, expires } : p));
+}
+
+/** Shrinks a photo to fit the TV (longest side 1920 px) as a JPEG. */
+export async function tvJpeg(file: Blob): Promise<Blob> {
+  const bmp = await createImageBitmap(file);
+  const scale = Math.min(1, 1920 / Math.max(bmp.width, bmp.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bmp.width * scale);
+  canvas.height = Math.round(bmp.height * scale);
+  canvas.getContext('2d')!.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  return new Promise((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error('Could not read photo'))), 'image/jpeg', 0.82));
+}
+
+/** Uploads photos for the slideshow one by one; returns the new slides and how many failed. */
+export async function uploadSlides(files: File[], onProgress: (done: number) => void): Promise<{ slides: SlidePhoto[]; failed: number }> {
+  const slides: SlidePhoto[] = [];
+  let failed = 0;
+  for (let i = 0; i < files.length; i++) {
+    try {
+      const blob = await tvJpeg(files[i]);
+      const { path, url, expires } = await uploadPhoto(blob, `slide-${i}`);
+      slides.push({ path, url, expires, caption: '' });
+    } catch {
+      failed++;
+    }
+    onProgress(i + 1);
+  }
+  return { slides, failed };
+}
+
+export async function deleteSlideFiles(paths: string[]) {
+  if (paths.length) await supabase.storage.from('photos').remove(paths);
 }
 
 /** Center-crops an image file to a square JPEG (max 512 px). */

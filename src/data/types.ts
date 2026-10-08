@@ -69,7 +69,15 @@ export interface LrcRound {
 }
 
 /** What the TV shows: Auto follows the night; the rest pin a screen. */
-export type TvScreen = 'auto' | 'bank' | 'pickup' | 'prizes' | 'smash' | 'thanks';
+export type TvScreen = 'auto' | 'bank' | 'pickup' | 'prizes' | 'smash' | 'photos' | 'thanks';
+
+/** One slideshow photo: storage path, a signed link the TV can load, and an optional caption. */
+export interface SlidePhoto {
+  path: string;
+  url: string;
+  expires: string;
+  caption: string;
+}
 
 /** One line of the "Smash rules to set" card. `key` marks which part of the night it is for. */
 export interface SmashRule {
@@ -137,6 +145,10 @@ export interface Settings {
   prizeStoreOpen: boolean;
   /** Price board only: show prices, kids pay with physical tickets. Deduct in app: the old buy flow. */
   prizeStoreMode: 'board' | 'deduct';
+  /** Slideshow photos shown on the TV between matches, in quiet moments, or pinned. */
+  photos: SlidePhoto[];
+  /** Minutes between photo peeks on the TV (0 = off). */
+  photoEveryMinutes: number;
   /** What to set on the Switch for each part of the night (editable). */
   smashRules: SmashRule[];
   prizes: Prize[];
@@ -187,6 +199,8 @@ export const DEFAULT_SETTINGS: Settings = {
   prizeStoreOpen: false,
   prizeStoreMode: 'board',
   smashRules: DEFAULT_SMASH_RULES,
+  photos: [],
+  photoEveryMinutes: 3,
   prizes: DEFAULT_PRIZES,
   sound: false,
   demoReturnTo: null,

@@ -15,6 +15,7 @@ import { RulesScreen } from './RulesScreen';
 import { LrcScreen } from './LrcScreen';
 import { PrizeScreen } from './PrizeScreen';
 import { SmashRulesScreen } from './SmashRulesScreen';
+import { PhotoScreen } from './PhotoScreen';
 import { ATTRACT_AFTER_MS, ATTRACT_SLIDE_MS } from '../effects/config';
 import { HypeWord, Kickoff, MomentOverlay, TicketShower } from '../effects/Overlays';
 import { FiveMinuteAlert, SingOverlay } from '../effects/Party';
@@ -120,6 +121,8 @@ function Show({
   else if (view === 'hero') content = <HeroScreen m={model} />;
   else if (view === 'rules') content = <RulesScreen m={model} />;
   else if (view === 'smash') content = <SmashRulesScreen m={model} />;
+  else if (view === 'photos') content = <PhotoScreen m={model} />;
+  else if (view === 'photo') content = <PhotoScreen m={model} single />;
   else if (view === 'lrc') content = <LrcScreen m={model} />;
   else content = <Board m={model} fx={fx} />;
 
@@ -147,12 +150,16 @@ function Show({
   );
 }
 
-type View = 'board' | 'bank' | 'end' | 'hero' | 'rules' | 'lrc' | 'pickup' | 'prizes' | 'smash';
-const ATTRACT: View[] = ['hero', 'board', 'bank', 'rules', 'smash'];
+type View = 'board' | 'bank' | 'end' | 'hero' | 'rules' | 'lrc' | 'pickup' | 'prizes' | 'smash' | 'photos' | 'photo';
+const ATTRACT: View[] = ['hero', 'board', 'photos', 'bank', 'rules', 'photos', 'smash'];
+
+/** Between-matches photo peek: how long it stays, and how long after a result before it may show. */
+const PHOTO_FOR_MS = 10_000;
+const PHOTO_QUIET_MS = 20_000;
 
 /**
  * Which screen to show: Control's Ticket Bank switch wins, then the end card,
- * then attract mode (after a quiet minute, cycle hero → board → bank → rules → Smash rules),
+ * then attract mode (after a quiet minute, cycle hero → board → photos → bank → rules → photos → Smash rules),
  * then the 15 s Ticket Bank peek every 3 minutes, else the board.
  */
 function useView(model: BoardModel | null): View {
@@ -186,16 +193,23 @@ function useView(model: BoardModel | null): View {
   if (pinned === 'pickup') return 'pickup';
   if (pinned === 'prizes') return 'prizes';
   if (pinned === 'smash') return 'smash';
+  if (pinned === 'photos') return model.settings.photos.length ? 'photos' : 'board';
   if (pinned === 'thanks') return 'end';
   if (model.settings.lrc && model.settings.lrc.tournamentId === model.tournamentId) return 'lrc';
   // Payout time: cycle the price board, who still needs tickets, and the thanks card.
   if (model.settings.ticketsFrozen) return (['prizes', 'pickup', 'end'] as const)[Math.floor(now / ATTRACT_SLIDE_MS) % 3];
   if (model.status === 'finished') return 'end';
   const quiet = now - lastChange;
+  const hasPhotos = model.settings.photos.length > 0;
   if (quiet >= ATTRACT_AFTER_MS && model.status !== 'playoff') {
-    return ATTRACT[Math.floor((quiet - ATTRACT_AFTER_MS) / ATTRACT_SLIDE_MS) % ATTRACT.length];
+    const slides = hasPhotos ? ATTRACT : ATTRACT.filter((v) => v !== 'photos');
+    return slides[Math.floor((quiet - ATTRACT_AFTER_MS) / ATTRACT_SLIDE_MS) % slides.length];
   }
-  return rotating ? 'bank' : 'board';
+  if (rotating) return 'bank';
+  // A photo for 10 s every few minutes, half a cycle away from the Ticket Bank peek, never right after a result.
+  const every = model.settings.photoEveryMinutes * 60_000;
+  if (hasPhotos && every > 0 && quiet >= PHOTO_QUIET_MS && (now + every / 2) % every < PHOTO_FOR_MS) return 'photo';
+  return 'board';
 }
 
 function StartScreen({ title, onStart }: { title?: string; onStart: () => void }) {

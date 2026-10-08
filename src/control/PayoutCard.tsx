@@ -119,6 +119,7 @@ const SCREENS: { id: TvScreen; label: string }[] = [
   { id: 'pickup', label: 'Pick up tickets' },
   { id: 'prizes', label: 'Prize Store' },
   { id: 'smash', label: 'Smash rules' },
+  { id: 'photos', label: 'Photos' },
   { id: 'thanks', label: 'Thanks card' },
 ];
 
