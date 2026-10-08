@@ -18,6 +18,27 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // If the app never starts (an old copy is stuck), offer a fresh load instead of a black screen.
+      setTimeout(function () {
+        var root = document.getElementById('root');
+        if (root && !root.children.length) {
+          root.innerHTML =
+            '<div class="crash"><h1>Still loading…</h1><p>Tap to load the newest version.</p>' +
+            '<button class="crash__btn" id="fresh">Reload the app</button></div>';
+          document.getElementById('fresh').onclick = function () {
+            var done = function () { location.reload(); };
+            if (navigator.serviceWorker) {
+              navigator.serviceWorker.getRegistrations().then(function (rs) {
+                return Promise.all(rs.map(function (r) { return r.unregister(); }));
+              }).then(function () {
+                return window.caches ? caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); }) : null;
+              }).then(done, done);
+            } else done();
+          };
+        }
+      }, 10000);
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

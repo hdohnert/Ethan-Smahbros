@@ -93,3 +93,44 @@ button {
   border-color: var(--c-pink);
   background: rgba(255, 45, 149, 0.12);
 }
+
+/* Shown instead of a black screen if the app fails to load. */
+.crash {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px 16px;
+  text-align: center;
+  color: #f6f3ff;
+  background: #07051a;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.crash--loading {
+  color: #b9b0e0;
+}
+
+.crash h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.crash__btn {
+  padding: 14px 28px;
+  border: 0;
+  border-radius: 14px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a0b2e;
+  background: #ffc83d;
+}
+
+.crash__msg {
+  max-width: 100%;
+  white-space: pre-wrap;
+  font-size: 0.8rem;
+  color: #b9b0e0;
+}

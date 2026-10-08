@@ -27,7 +27,7 @@ export function App() {
 
   if (route === 'display') return <DisplayView key={hash} />;
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<div className="crash crash--loading">Loading…</div>}>
       {route === 'control' ? <ControlApp /> : route === 'station' ? <StationView /> : route === 'prizes' ? <PrizeStoreView /> : <Home />}
     </Suspense>
   );
