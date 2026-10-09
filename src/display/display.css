@@ -1812,3 +1812,120 @@
     animation: photo-in 0.8s ease both;
   }
 }
+
+/* ---------- trivia TV ---------- */
+
+.trivia {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.trivia__q-wrap,
+.trivia__idle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4vh;
+  width: 100%;
+  max-width: 88vw;
+}
+
+.trivia__cat {
+  font-family: var(--f-display);
+  font-size: 4.5vh;
+  color: var(--c-blue);
+}
+
+.trivia__q {
+  font-family: var(--f-fun);
+  font-size: min(9vh, 5.4vw);
+  line-height: 1.15;
+  color: #fff;
+  text-shadow: 0 0 3vh rgba(33, 212, 253, 0.6);
+}
+
+.trivia__a {
+  padding: 2vh 4vw;
+  border-radius: 3vh;
+  font-family: var(--f-display);
+  font-size: min(9vh, 5.4vw);
+  color: #1a0b2e;
+  background: var(--c-lime);
+  box-shadow: 0 0 5vh rgba(182, 255, 59, 0.6);
+}
+
+.trivia__think {
+  font-size: 4.5vh;
+  color: var(--c-textDim);
+}
+
+.trivia__winner {
+  display: flex;
+  align-items: center;
+  gap: 2vw;
+  font-family: var(--f-fun);
+  font-size: 7vh;
+  color: var(--c-gold);
+}
+
+.trivia__title {
+  margin: 0;
+  font-family: var(--f-display);
+  font-weight: 400;
+  font-size: min(14vh, 9vw);
+  color: var(--c-gold);
+  text-shadow: 0 0 4vh rgba(255, 200, 61, 0.8);
+}
+
+.trivia__sub {
+  margin: 0;
+  font-size: 4vh;
+  color: var(--c-textDim);
+}
+
+.trivia__empty {
+  font-size: 4vh;
+  color: var(--c-textDim);
+}
+
+.trivia__leaders {
+  list-style: none;
+  margin: 0;
+  padding: 2vh 3vw;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.4vh 4vw;
+  width: min(80vw, 1400px);
+  text-align: left;
+}
+
+.trivia__leaders li {
+  display: flex;
+  align-items: center;
+  gap: 1.2vw;
+  font-size: 4vh;
+  min-width: 0;
+}
+
+.trivia__rank {
+  width: 4vh;
+  font-family: var(--f-display);
+  color: var(--c-gold);
+}
+
+.trivia__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-family: var(--f-fun);
+}
+
+.trivia__n {
+  color: var(--c-lime);
+}

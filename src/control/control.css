@@ -1539,3 +1539,48 @@
   opacity: 0.6;
   pointer-events: none;
 }
+
+/* ---------- trivia station ---------- */
+
+.trivia-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.trivia-card__cat {
+  font-weight: 700;
+  color: var(--c-blue);
+}
+
+.trivia-card__q {
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.trivia-card__a {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(182, 255, 59, 0.12);
+  color: var(--c-lime);
+}
+
+.trivia-card__tv {
+  flex-wrap: wrap;
+}
+
+.trivia-win {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--c-lime);
+}
+
+.center-text {
+  text-align: center;
+}
+
+.trivia-edit {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--c-panelBorder);
+}

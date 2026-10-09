@@ -16,6 +16,7 @@ import { LrcScreen } from './LrcScreen';
 import { PrizeScreen } from './PrizeScreen';
 import { SmashRulesScreen } from './SmashRulesScreen';
 import { PhotoScreen } from './PhotoScreen';
+import { TriviaScreen } from './TriviaScreen';
 import { ATTRACT_AFTER_MS, ATTRACT_SLIDE_MS } from '../effects/config';
 import { HypeWord, Kickoff, MomentOverlay, TicketShower } from '../effects/Overlays';
 import { FiveMinuteAlert, SingOverlay } from '../effects/Party';
@@ -40,7 +41,7 @@ function useDisplayToken(): [string | null, (t: string | null) => void] {
   return [token, (t) => setToken(store('display-token', t))];
 }
 
-export function DisplayView() {
+export function DisplayView({ trivia }: { trivia?: boolean } = {}) {
   const sample = !isConfigured || hashParams().has('sample');
   const [token, setToken] = useDisplayToken();
   const auth = useAuth();
@@ -58,7 +59,7 @@ export function DisplayView() {
   }, [badToken, setToken]);
 
   const needsLink = !sample && !src && !auth.loading;
-  return <Show model={model} needsLink={needsLink} onToken={setToken} offline={!sample && !live.online} token={token} />;
+  return <Show model={model} needsLink={needsLink} onToken={setToken} offline={!sample && !live.online} token={token} trivia={trivia} />;
 }
 
 function Show({
@@ -67,12 +68,15 @@ function Show({
   onToken,
   offline,
   token,
+  trivia,
 }: {
   model: BoardModel | null;
   needsLink: boolean;
   onToken: (t: string) => void;
   offline: boolean;
   token: string | null;
+  /** The second TV: trivia only, no tournament screens or effects. */
+  trivia?: boolean;
 }) {
   const [started, setStarted] = useState(false);
   const [kickoff, setKickoff] = useState(false);
@@ -81,7 +85,7 @@ function Show({
   const idle = useIdle(started, 2000);
   const reduced = useReducedMotion();
   const view = useView(model);
-  const fx = useEffectsEngine(model, started && !kickoff, reduced);
+  const fx = useEffectsEngine(model, started && !kickoff && !trivia, reduced);
   const endKickoff = useCallback(() => setKickoff(false), []);
 
   useEffect(() => {
@@ -101,9 +105,9 @@ function Show({
     void unlockAudio();
     // In Safari (before Add to Home Screen) put the link on the clipboard: the
     // installed app has separate storage and can paste it back in one tap.
-    if (token && !isStandalone()) void copyText(appUrl(`display?t=${token}`));
+    if (token && !isStandalone()) void copyText(appUrl(`${trivia ? 'trivia' : 'display'}?t=${token}`));
     setStarted(true);
-    setKickoff(true);
+    if (!trivia) setKickoff(true);
     void fs.then(lockLandscape);
     await Promise.race([lock, new Promise((r) => setTimeout(r, 3000))]);
     setShowStatus(true);
@@ -112,8 +116,9 @@ function Show({
 
   let content;
   if (needsLink) content = <LinkScreen onToken={onToken} />;
-  else if (!started) content = <StartScreen title={model?.settings.title} onStart={start} />;
+  else if (!started) content = <StartScreen title={trivia ? '🧠 Trivia Time' : model?.settings.title} onStart={start} />;
   else if (!model) content = <div className="safe start"><div className="start__hint">Loading the scoreboard…</div></div>;
+  else if (trivia) content = <TriviaScreen m={model} reduced={reduced} />;
   else if (view === 'end') content = <EndCard m={model} />;
   else if (view === 'bank') content = <TicketBank m={model} />;
   else if (view === 'pickup') content = <TicketBank m={model} pickup />;
@@ -130,10 +135,14 @@ function Show({
     <div className={`display${idle ? ' display--idle' : ''}${fx.shake ? ' display--shake' : ''}`}>
       <div className="starfield" aria-hidden />
       {content}
-      {started && model && view === 'board' && <HypeWord fx={fx} reduced={reduced} />}
-      {started && model && <TicketShower fx={fx} />}
-      {started && model && <MomentOverlay m={model} fx={fx} reduced={reduced} />}
-      {started && model && <FiveMinuteAlert m={model} reduced={reduced} />}
+      {started && model && !trivia && (
+        <>
+          {view === 'board' && <HypeWord fx={fx} reduced={reduced} />}
+          <TicketShower fx={fx} />
+          <MomentOverlay m={model} fx={fx} reduced={reduced} />
+          <FiveMinuteAlert m={model} reduced={reduced} />
+        </>
+      )}
       {started && model && <SingOverlay m={model} reduced={reduced} />}
       {kickoff && <Kickoff m={model} reduced={reduced} onDone={endKickoff} />}
       {showStatus && (

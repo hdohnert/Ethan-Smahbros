@@ -480,33 +480,37 @@ function EndButton({ live }: { live: Live }) {
 // ---------------------------------------------------------------- display, demo, restart
 
 function DisplayLinkCard() {
-  const [url, setUrl] = useState<string | null>(null);
+  const [link, setLink] = useState<{ url: string; trivia: boolean } | null>(null);
   const toast = useToast();
   const { busy, run } = useAction();
+  const get = (trivia: boolean) =>
+    run(async () => setLink({ url: appUrl(`${trivia ? 'trivia' : 'display'}?t=${await getOrCreateDisplayToken()}`), trivia }));
   return (
     <section className="card stack">
       <h2 className="card__title">📺 TV Display</h2>
-      {!url ? (
-        <button
-          className="btn"
-          disabled={busy}
-          onClick={() => run(async () => setUrl(appUrl(`display?t=${await getOrCreateDisplayToken()}`)))}
-        >
+      <div className="row">
+        <button className={`btn${link && !link.trivia ? ' btn--go' : ''}`} disabled={busy} onClick={() => get(false)}>
           Get the Display link
         </button>
-      ) : (
+        <button className={`btn${link?.trivia ? ' btn--go' : ''}`} disabled={busy} onClick={() => get(true)}>
+          🧠 Trivia TV link
+        </button>
+      </div>
+      {link && (
         <>
-          <input className="link-box" readOnly value={url} onFocus={(e) => e.target.select()} />
+          <input className="link-box" readOnly value={link.url} onFocus={(e) => e.target.select()} />
           <div className="row">
-            <button className="btn" onClick={async () => toast((await copyText(url)) ? 'Link copied' : 'Copy failed; select the text instead')}>
+            <button className="btn" onClick={async () => toast((await copyText(link.url)) ? 'Link copied' : 'Copy failed; select the text instead')}>
               Copy link
             </button>
-            <a className="btn" href={url} target="_blank" rel="noreferrer">
+            <a className="btn" href={link.url} target="_blank" rel="noreferrer">
               Open
             </a>
           </div>
           <p className="muted small">
-            Open this link on the TV device (it's read-only, no sign-in). Then Share → Add to Home Screen, and launch from the icon.
+            {link.trivia
+              ? 'Open this on a second TV. It shows only trivia: the question and answer when a Trivia station puts them up, and the trivia leaderboard in between. The main TV is never interrupted.'
+              : "Open this link on the TV device (it's read-only, no sign-in). Then Share → Add to Home Screen, and launch from the icon."}
           </p>
         </>
       )}

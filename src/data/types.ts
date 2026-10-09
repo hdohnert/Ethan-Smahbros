@@ -3,6 +3,7 @@
 import type { Phase, EventKind, MatchFormat, TicketScale } from '../rules/types';
 import { DEFAULT_TICKETS } from '../rules/tickets';
 import { theme } from '../theme';
+import { DEFAULT_TRIVIA, type TriviaLive, type TriviaQ } from './trivia';
 
 export interface Player {
   id: string;
@@ -149,6 +150,9 @@ export interface Settings {
   photos: SlidePhoto[];
   /** Minutes between photo peeks on the TV (0 = off). */
   photoEveryMinutes: number;
+  /** Trivia questions (editable) and tickets for a right answer (1, 2, 3 or 5). */
+  trivia: TriviaQ[];
+  triviaTickets: number;
   /** What to set on the Switch for each part of the night (editable). */
   smashRules: SmashRule[];
   prizes: Prize[];
@@ -201,6 +205,8 @@ export const DEFAULT_SETTINGS: Settings = {
   smashRules: DEFAULT_SMASH_RULES,
   photos: [],
   photoEveryMinutes: 3,
+  trivia: DEFAULT_TRIVIA,
+  triviaTickets: 2,
   prizes: DEFAULT_PRIZES,
   sound: false,
   demoReturnTo: null,
@@ -251,4 +257,8 @@ export interface Snapshot {
   /** Kids whose physical tickets have been handed out (payout checklist). */
   paid?: string[];
   recent_tickets: TicketEvent[];
+  /** What the trivia TV shows (older databases don't send it). */
+  trivia_live?: TriviaLive | null;
+  /** Right trivia answers per kid tonight. */
+  trivia_counts?: Record<string, number>;
 }

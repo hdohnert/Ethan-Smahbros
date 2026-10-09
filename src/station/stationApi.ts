@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../data/supabase';
 import type { Prize } from '../data/types';
+import type { TriviaQ } from '../data/trivia';
 import { store } from '../ui/device';
 
 export interface RosterPlayer {
@@ -20,6 +21,9 @@ export interface Roster {
   remaining?: number;
   prizes: Prize[];
   title: string | null;
+  /** Saved trivia list and tickets per right answer (null until edited in Control). */
+  trivia?: TriviaQ[] | null;
+  trivia_tickets?: number | null;
 }
 
 type Res<T> = { ok: true } & T | { ok: false; error: string };

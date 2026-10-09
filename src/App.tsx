@@ -10,7 +10,7 @@ const PrizeStoreView = lazy(() => import('./station/PrizeStoreView').then((m) =>
 import { theme } from './theme';
 import { store } from './ui/device';
 
-const ROLES = ['display', 'control', 'station', 'prizes'];
+const ROLES = ['display', 'trivia', 'control', 'station', 'prizes'];
 
 export function App() {
   const [route, hash] = useHashRoute();
@@ -26,6 +26,7 @@ export function App() {
   }, [route]);
 
   if (route === 'display') return <DisplayView key={hash} />;
+  if (route === 'trivia') return <DisplayView key={hash} trivia />;
   return (
     <Suspense fallback={<div className="crash crash--loading">Loading…</div>}>
       {route === 'control' ? <ControlApp /> : route === 'station' ? <StationView /> : route === 'prizes' ? <PrizeStoreView /> : <Home />}

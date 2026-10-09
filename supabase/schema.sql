@@ -28,6 +28,8 @@ create table if not exists public.app_state (
   updated_at timestamptz not null default now()
 );
 insert into public.app_state (id) values (1) on conflict do nothing;
+-- What the trivia TV shows right now (set from a Trivia station).
+alter table public.app_state add column if not exists trivia_live jsonb;
 
 create table if not exists public.players (
   id uuid primary key default gen_random_uuid(),
@@ -285,6 +287,14 @@ begin
     'paid', coalesce((
       select jsonb_agg(m.player_id) from public.payout_marks m
       where m.bank_id = t.ticket_bank_id and m.paid), '[]'::jsonb),
+    'trivia_live', st.trivia_live,
+    'trivia_counts', coalesce((
+      select jsonb_object_agg(c.player_id, c.n)
+      from (
+        select player_id, count(*) as n from public.ticket_events
+        where bank_id = t.ticket_bank_id and source = 'Trivia' and not undone and amount > 0
+        group by player_id
+      ) c), '{}'::jsonb),
     'recent_tickets', coalesce((
       select jsonb_agg(to_jsonb(x) order by x.created_at desc)
       from (
@@ -449,6 +459,8 @@ begin
     'remaining', public.ticket_budget() - public.bank_issued(b.bank_id),
     'prizes', coalesce(st.settings->'prizes', '[]'::jsonb),
     'title', st.settings->>'title',
+    'trivia', st.settings->'trivia',
+    'trivia_tickets', st.settings->'triviaTickets',
     'players', coalesce((
       select jsonb_agg(jsonb_build_object(
         'id', p.id, 'name', p.name, 'emoji', p.emoji, 'color', p.color, 'photo_url', p.photo_url,
@@ -490,6 +502,34 @@ begin
   values (b.bank_id, p_player, p_amount, left(trim(p_station), 40), left(trim(p_station), 40), left(trim(p_station), 40), left(p_device, 64))
   returning id into new_id;
   return jsonb_build_object('ok', true, 'id', new_id);
+end $$;
+
+-- Trivia station → trivia TV: which question is up, answer shown, who got it.
+-- Only an id, a phase, a player and an amount are stored, never free text.
+create or replace function public.station_trivia(p_pin text, p_live jsonb)
+returns jsonb
+language plpgsql security definer set search_path = ''
+as $$
+declare
+  err text;
+begin
+  if p_pin is null then
+    if not public.is_owner() then return jsonb_build_object('ok', false, 'error', 'Not allowed'); end if;
+  else
+    err := public.check_station_pin(p_pin);
+    if err is not null then return jsonb_build_object('ok', false, 'error', err); end if;
+  end if;
+  if p_live is not null and coalesce(p_live->>'phase', '') not in ('question', 'answer', 'winner') then
+    return jsonb_build_object('ok', false, 'error', 'Bad trivia step');
+  end if;
+  update public.app_state set trivia_live = case when p_live is null then null else jsonb_build_object(
+    'qid', left(coalesce(p_live->>'qid', ''), 40),
+    'phase', p_live->>'phase',
+    'winner', case when coalesce(p_live->>'winner', '') ~ '^[0-9a-f-]{36}$' then p_live->>'winner' end,
+    'amount', case when coalesce(p_live->>'amount', '') ~ '^[0-9]{1,2}$' then (p_live->>'amount')::int end,
+    'at', now()) end
+  where id = 1;
+  return jsonb_build_object('ok', true);
 end $$;
 
 -- A station may undo only its own most recent award.
@@ -568,7 +608,8 @@ grant execute on function
   to authenticated;
 grant execute on function
   public.get_snapshot(text), public.station_roster(text), public.station_award(text, text, text, uuid, int),
-  public.station_undo(text, text), public.prize_purchase(text, text, uuid, int, text), public.ping()
+  public.station_undo(text, text), public.prize_purchase(text, text, uuid, int, text), public.ping(),
+  public.station_trivia(text, jsonb)
   to anon, authenticated;
 -- Internal helpers stay private.
 revoke execute on function public.check_station_pin(text), public.current_bank(), public.ticket_bank_balances(uuid),

@@ -5,9 +5,11 @@ import { deviceId, store } from '../ui/device';
 import { ToastProvider, useAction } from '../ui/Toast';
 import { PinGate } from './PinGate';
 import { stationCall, useStation, type RosterPlayer } from './stationApi';
+import { TriviaStation } from './TriviaStation';
+import { TRIVIA_GAME } from '../data/trivia';
 import '../control/control.css';
 
-const GAMES = ['Scavenger Hunt', 'Balloon Pop'];
+const GAMES = ['Trivia', 'Scavenger Hunt', 'Balloon Pop'];
 
 export function StationView() {
   return (
@@ -46,7 +48,9 @@ function Station() {
   return (
     <>
       <header className="c-top">
-        <div className="c-top__title">🎯 {game}</div>
+        <div className="c-top__title">
+          {game === TRIVIA_GAME ? '🧠' : '🎯'} {game}
+        </div>
         <button className="btn btn--small" onClick={() => setGame('')}>
           Change game
         </button>
@@ -54,30 +58,39 @@ function Station() {
       <main className="c-body">
         {st.error && <div className="pill pill--offline">{st.error}</div>}
         {st.roster.frozen && <div className="frozen-banner">🔒 Tickets frozen for payout. No more awards right now.</div>}
-        <p className="muted">Tap a kid, then how many tickets.</p>
-        <div className="kid-grid">
-          {st.roster.players.map((p) => (
-            <button key={p.id} className="kid-btn" onClick={() => setKid(p)} disabled={busy || !!st.roster?.frozen}>
-              <Avatar player={p} className="avatar--big" />
-              <span className="kid-btn__name">{p.name}</span>
-              <span className="kid-btn__bal">{p.balance} 🎟️</span>
-            </button>
-          ))}
-        </div>
-        {last && (
-          <button
-            className="btn btn--ghost undo-station"
-            disabled={busy}
-            onClick={() =>
-              run(async () => {
-                await stationCall('station_undo', { p_pin: st.pin, p_device: deviceId() });
-                setLast(null);
-                await st.reload();
-              }, 'Last award undone')
-            }
-          >
-            ↶ Undo {last}
-          </button>
+        {game === TRIVIA_GAME ? (
+          <TriviaStation st={st} />
+        ) : (
+          <>
+            <p className="muted">Tap a kid, then how many tickets.</p>
+            <div className="kid-grid">
+              {st.roster.players.map((p) => (
+                <button key={p.id} className="kid-btn" onClick={() => setKid(p)} disabled={busy || !!st.roster?.frozen}>
+                  <Avatar player={p} className="avatar--big" />
+                  <span className="kid-btn__name">{p.name}</span>
+                  <span className="kid-btn__bal">{p.balance} 🎟️</span>
+                </button>
+              ))}
+            </div>
+            {last && (
+              <button
+                className="btn btn--ghost undo-station"
+                disabled={busy}
+                onClick={() =>
+                  run(async () => {
+                    await stationCall('station_undo', {
+                      p_pin: st.pin,
+                      p_device: deviceId(),
+                    });
+                    setLast(null);
+                    await st.reload();
+                  }, 'Last award undone')
+                }
+              >
+                ↶ Undo {last}
+              </button>
+            )}
+          </>
         )}
       </main>
       {kid && (
