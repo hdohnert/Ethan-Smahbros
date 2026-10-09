@@ -16,7 +16,7 @@ import {
   startDemo,
   startTournament,
 } from '../data/api';
-import { seriesFormat, type Player } from '../data/types';
+import { seriesFormat, smashPlayers, type Player } from '../data/types';
 import type { Live } from '../data/useSnapshot';
 import { seedTop4 } from '../rules/replay';
 import type { Series } from '../rules/types';
@@ -68,9 +68,9 @@ function Setup({ live }: { live: Live }) {
   const t = snap.tournament!;
   const get = usePlayers(live);
   const { busy, run } = useAction();
-  const active = snap.players.filter((p) => p.active);
+  const active = smashPlayers(snap).filter((p) => p.active);
   const defaultKing = active.find((p) => p.name.toLowerCase() === snap.settings.birthdayName.toLowerCase()) ?? active[0];
-  const king = (d.king && get(d.king)?.active ? d.king : defaultKing?.id) ?? null;
+  const king = (d.king && active.some((p) => p.id === d.king) ? d.king : defaultKing?.id) ?? null;
   const queue = d.queue.filter((id) => id !== king);
 
   return (
@@ -319,7 +319,7 @@ function BracketStarter({ live }: { live: Live }) {
   const get = usePlayers(live);
   const { busy, run } = useAction();
   const [ask, setAsk] = useState(false);
-  const seeding = seedTop4(d, snap.players);
+  const seeding = seedTop4(d, smashPlayers(snap));
   return (
     <section className="card stack">
       <button className="btn btn--xl btn--gold" disabled={!seeding.ok || busy} onClick={() => setAsk(true)}>

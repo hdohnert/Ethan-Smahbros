@@ -1584,3 +1584,32 @@
   padding-bottom: 10px;
   border-bottom: 1px solid var(--c-panelBorder);
 }
+
+/* ---------- Smash on/off per kid ---------- */
+
+.plist__legend {
+  display: flex;
+  justify-content: flex-end;
+  gap: 18px;
+  padding: 0 4px 4px;
+}
+
+.smash-chip {
+  flex: none;
+  width: 40px;
+  height: 32px;
+  margin-right: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--c-panelBorder);
+  background: transparent;
+  font-size: 1.1rem;
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+
+.smash-chip--on {
+  opacity: 1;
+  filter: none;
+  border-color: var(--c-lime);
+  background: rgba(182, 255, 59, 0.12);
+}

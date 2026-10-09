@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { sessionStartMs } from '../data/api';
 import type { Live } from '../data/useSnapshot';
+import { smashPlayers } from '../data/types';
 import { projectBudget, type Projection } from '../rules/budget';
 
 /** Live budget projection for Control; re-evaluates every 30 s as the session clock moves. */
@@ -24,7 +25,7 @@ export function useBudget(live: Live): Projection | null {
       scale: snap.settings.tickets,
       semiBestOf: snap.settings.semiBestOf,
       finalBestOf: snap.settings.finalBestOf,
-      activePlayers: snap.players.filter((p) => p.active).length,
+      activePlayers: smashPlayers(snap).filter((p) => p.active).length,
       sessionMinutes: snap.settings.sessionMinutes,
       sessionStartedAt: sessionStartMs(snap),
       now,

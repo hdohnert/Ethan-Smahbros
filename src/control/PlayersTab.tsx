@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { addPlayers, AVATAR_COLORS, deletePlayer, updatePlayer, uploadPhoto } from '../data/api';
+import { addPlayers, AVATAR_COLORS, deletePlayer, saveSettings, updatePlayer, uploadPhoto } from '../data/api';
 import type { Player } from '../data/types';
 import type { Live } from '../data/useSnapshot';
 import { Avatar } from '../ui/Avatar';
@@ -16,6 +16,9 @@ export function PlayersTab({ live }: { live: Live }) {
   const [many, setMany] = useState('');
   const [editing, setEditing] = useState<Player | null>(null);
   const players = snap.players;
+  const smashOut = new Set(snap.settings.smashOut);
+  const here = players.filter((p) => p.active).length;
+  const out = players.filter((p) => p.active && smashOut.has(p.id)).length;
   const isDemo = Boolean(snap.tournament?.is_demo);
 
   // Names already on the list (case-insensitive) are skipped, so pasting twice is harmless.
@@ -108,14 +111,38 @@ export function PlayersTab({ live }: { live: Live }) {
 
       <section className="card">
         <h2 className="card__title">
-          Players <span className="muted">({players.filter((p) => p.active).length} here)</span>
+          Players{' '}
+          <span className="muted">
+            ({here} here · {here - out} playing Smash)
+          </span>
         </h2>
+        <div className="plist__legend muted small">
+          <span>🎮 Smash</span>
+          <span>Here</span>
+        </div>
         <ul className="plist">
           {players.map((p) => (
             <li key={p.id} className={`plist__row${p.active ? '' : ' plist__row--off'}`}>
               <button className="plist__who" onClick={() => setEditing(p)}>
                 <Avatar player={p} />
                 <span className="plist__name">{p.name}</span>
+              </button>
+              <button
+                className={`smash-chip${p.active && !smashOut.has(p.id) ? ' smash-chip--on' : ''}`}
+                disabled={busy || !p.active}
+                aria-pressed={p.active && !smashOut.has(p.id)}
+                title="Plays in the Smash tournament"
+                onClick={() => {
+                  const next = new Set(smashOut);
+                  if (next.has(p.id)) next.delete(p.id);
+                  else next.add(p.id);
+                  void run(
+                    () => saveSettings(snap, { smashOut: [...next] }).then(live.refresh),
+                    next.has(p.id) ? `${p.name} sits out Smash` : `${p.name} plays Smash`,
+                  );
+                }}
+              >
+                🎮
               </button>
               <label className="switch" title="Here tonight">
                 <input
@@ -128,7 +155,10 @@ export function PlayersTab({ live }: { live: Live }) {
             </li>
           ))}
         </ul>
-        <p className="muted small">Switch off a kid who leaves or sits out; they drop out of line but keep their scores and tickets.</p>
+        <p className="muted small">
+          🎮 off = here but not playing Smash: out of the line and the bracket, still dealt into Left Right Center and able to earn tickets at
+          stations and trivia. Here off = gone for the night; they keep their scores and tickets.
+        </p>
       </section>
 
       {editing && <EditPlayer player={editing} live={live} onClose={() => setEditing(null)} />}

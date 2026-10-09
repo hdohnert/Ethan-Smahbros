@@ -124,6 +124,8 @@ export interface Settings {
   ticketsFrozen: boolean;
   /** Main session length in minutes (used by the budget projection and the session clock). */
   sessionMinutes: number;
+  /** Kids who are here but sit out the Smash tournament (they still play LRC, trivia and stations). */
+  smashOut: string[];
   /** Move kids who've played 2+ games fewer than average to the front of the line. */
   autoCatchUp: boolean;
   /** TV: "5 minutes left" alert and a corner countdown for the last 5 minutes of the main session. */
@@ -186,6 +188,7 @@ export const DEFAULT_SETTINGS: Settings = {
   ticketBudget: 1000,
   ticketsFrozen: false,
   sessionMinutes: 75,
+  smashOut: [],
   autoCatchUp: true,
   tvFiveMinuteAlert: true,
   singAt: null,
@@ -215,6 +218,12 @@ export const DEFAULT_SETTINGS: Settings = {
 export function sessionStartMs(snap: Snapshot): number | null {
   const s = snap.settings.sessionStart;
   return s && s.tournamentId === snap.tournament?.id ? Date.parse(s.at) : null;
+}
+
+/** Players as the tournament sees them: a kid sitting out Smash counts as not here for the line, catch-up and the bracket. */
+export function smashPlayers(snap: Pick<Snapshot, 'players' | 'settings'>): Player[] {
+  const out = new Set(snap.settings.smashOut ?? []);
+  return out.size ? snap.players.map((p) => (out.has(p.id) ? { ...p, active: false } : p)) : snap.players;
 }
 
 /** When the session clock started: Start Tournament, else the first match (older tournaments). */

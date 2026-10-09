@@ -7,7 +7,7 @@ import { kothResult, playoffGameTickets, top4Tickets } from '../rules/tickets';
 import { makeTables, roundCost, tablePayout } from '../rules/lrc';
 import type { Derived, MatchFormat, MatchPayload, RulesEvent, SeriesId, TicketAward } from '../rules/types';
 import { supabase } from './supabase';
-import { replayOptions, type LrcRound, type Player, type Settings, type SlidePhoto, type Snapshot, type Tournament } from './types';
+import { replayOptions, smashPlayers, type LrcRound, type Player, type Settings, type SlidePhoto, type Snapshot, type Tournament } from './types';
 
 export class StaleError extends Error {
   constructor() {
@@ -94,8 +94,9 @@ function kothCatchUp(snap: Snapshot, winner: string, losers: string[], payload: 
   const events = snap.events as RulesEvent[];
   const id = events.reduce((n, e) => Math.max(n, e.id), 0) + 1;
   const next: RulesEvent = { id, kind: 'match', phase: 'koth', winner_id: winner, loser_id: losers[0] ?? null, payload, undone: false };
-  const after = replay(snap.tournament, snap.players, [...events, next], replayOptions(snap.settings));
-  return catchUpPicks(after, snap.players, [winner, ...losers]);
+  const players = smashPlayers(snap);
+  const after = replay(snap.tournament, players, [...events, next], replayOptions(snap.settings));
+  return catchUpPicks(after, players, [winner, ...losers]);
 }
 
 export async function recordGame(snap: Snapshot, d: Derived, series: SeriesId, winner: string) {
@@ -109,7 +110,7 @@ export async function recordGame(snap: Snapshot, d: Derived, series: SeriesId, w
 }
 
 export async function startBracket(snap: Snapshot, d: Derived) {
-  const seeding = seedTop4(d, snap.players);
+  const seeding = seedTop4(d, smashPlayers(snap));
   if (!seeding.ok) throw new Error(seeding.reason);
   await record(snap.tournament!, 'bracket', {
     payload: { seeds: seeding.seeds },
@@ -547,7 +548,7 @@ export async function exitDemo(snap: Snapshot) {
 
 /** One random step of the demo: a match, a station award, or a playoff game. */
 export async function demoStep(snap: Snapshot): Promise<string> {
-  const d = replay(snap.tournament, snap.players, snap.events as RulesEvent[], replayOptions(snap.settings));
+  const d = replay(snap.tournament, smashPlayers(snap), snap.events as RulesEvent[], replayOptions(snap.settings));
   const pick = <T,>(xs: T[]) => xs[Math.floor(Math.random() * xs.length)];
   const name = (id: string) => snap.players.find((p) => p.id === id)?.name ?? '?';
 

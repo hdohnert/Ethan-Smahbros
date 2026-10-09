@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { clockStartMs, kothMatchCount, startSing, stopSing } from '../data/api';
 import type { Live } from '../data/useSnapshot';
+import { smashPlayers } from '../data/types';
 import { fairness } from '../rules/fairness';
 import { formatClock, sessionClock } from '../rules/session';
 import { Avatar } from '../ui/Avatar';
@@ -70,7 +71,7 @@ export function FairnessCard({ live }: { live: Live }) {
   const snap = live.snap!;
   const d = live.derived!;
   const [open, setOpen] = useState(false);
-  const f = fairness(d, snap.players);
+  const f = fairness(d, smashPlayers(snap));
   const byId = new Map(snap.players.map((p) => [p.id, p]));
   if (!f.rows.length) return null;
   return (
