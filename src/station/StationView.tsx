@@ -7,7 +7,7 @@ import { PinGate } from './PinGate';
 import { stationCall, useStation, type RosterPlayer } from './stationApi';
 import '../control/control.css';
 
-const GAMES = ['Ring Toss', 'Bean Bag Toss', 'Duck Pond', 'Cake Walk', 'Bowling', 'Balloon Pop'];
+const GAMES = ['Scavenger Hunt', 'Balloon Pop'];
 
 export function StationView() {
   return (

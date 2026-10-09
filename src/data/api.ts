@@ -560,8 +560,8 @@ export async function demoStep(snap: Snapshot): Promise<string> {
     }
     if (Math.random() < 0.2) {
       const p = pick(snap.players);
-      await awardTickets(snap, p.id, pick([1, 2, 3, 5]), 'Ring Toss', 'Ring Toss');
-      return `Ring Toss tickets for ${p.name}`;
+      await awardTickets(snap, p.id, pick([1, 2, 3, 5]), 'Scavenger Hunt', 'Scavenger Hunt');
+      return `Scavenger Hunt tickets for ${p.name}`;
     }
     if (!d.king || !d.challenger) return 'Waiting for players';
     // The king wins a bit more often so streaks and fire effects show up.
