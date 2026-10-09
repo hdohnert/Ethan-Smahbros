@@ -106,11 +106,11 @@ describe('streak math', () => {
     expect(kothResult(d, 'Ethan', 'Ava', DEFAULT_TICKETS, false).rest).toBe(false);
   });
 
-  it('pays 5 for playing and 10 for winning', () => {
+  it('pays 3 for playing and 8 for winning', () => {
     const r = kothResult(replay(T, players, []), 'Ava', 'Ethan', DEFAULT_TICKETS, true);
     expect(r.awards).toEqual([
-      { player_id: 'Ethan', amount: 5, reason: 'Played a match' },
-      { player_id: 'Ava', amount: 10, reason: 'Won a match' },
+      { player_id: 'Ethan', amount: 3, reason: 'Played a match' },
+      { player_id: 'Ava', amount: 8, reason: 'Won a match' },
     ]);
   });
 });
@@ -161,8 +161,8 @@ describe('best-of-3 completion', () => {
     expect(d.bracket?.final).toMatchObject({ a: 'Ethan', b: 'Ben', winner: null });
     expect(d.currentSeries?.id).toBe('final');
     expect(playoffGameTickets(d.currentSeries!, 'Ben', DEFAULT_TICKETS)).toEqual([
-      { player_id: 'Ethan', amount: 5, reason: 'Played a playoff game' },
-      { player_id: 'Ben', amount: 10, reason: 'Won a playoff game' },
+      { player_id: 'Ethan', amount: 3, reason: 'Played a playoff game' },
+      { player_id: 'Ben', amount: 8, reason: 'Won a playoff game' },
     ]);
 
     d = replay(T, players, [...events, game('final', 'Ben', 'Ethan')]);
@@ -210,7 +210,7 @@ describe('4-player matches', () => {
     expect(d.stats.Ethan.streak).toBe(3);
     const r = kothResult(d, 'Ben', ['Ethan', 'Cal', 'Dee'], DEFAULT_TICKETS, true);
     expect(r.awards.filter((a) => a.reason === 'Played a match').map((a) => a.player_id)).toEqual(['Ethan', 'Cal', 'Dee']);
-    expect(r.awards).toContainEqual({ player_id: 'Ben', amount: 10, reason: 'Won a match' });
+    expect(r.awards).toContainEqual({ player_id: 'Ben', amount: 8, reason: 'Won a match' });
     expect(r.awards).toContainEqual({ player_id: 'Ben', amount: 10, reason: 'Giant Slayer bonus' });
   });
 

@@ -35,7 +35,7 @@ export interface Projection {
 }
 
 /** Until real matches give a better number. */
-export const DEFAULT_MATCH_MINUTES = 4.5;
+export const DEFAULT_MATCH_MINUTES = 3;
 
 function project(i: BudgetInput, scale: TicketScale) {
   const { d } = i;
@@ -50,7 +50,7 @@ function project(i: BudgetInput, scale: TicketScale) {
     const start = i.sessionStartedAt ?? (played ? Math.min(...i.kothMatchTimes) : i.now);
     const elapsed = d.status === 'setup' ? 0 : Math.max(0, (i.now - start) / 60000);
     // Trust the real pace only after a few matches; keep it within a sane range.
-    const avg = played >= 3 && elapsed >= 10 ? Math.min(8, Math.max(3, elapsed / played)) : DEFAULT_MATCH_MINUTES;
+    const avg = played >= 3 && elapsed >= 10 ? Math.min(8, Math.max(2, elapsed / played)) : DEFAULT_MATCH_MINUTES;
     remainingMatches = Math.ceil(Math.max(0, i.sessionMinutes - elapsed) / avg);
     parts.push({ label: `${remainingMatches} more ${size}-player matches × ${perMatch}`, amount: remainingMatches * perMatch });
     parts.push({ label: 'Top 4 (4 × ' + scale.top4 + ')', amount: 4 * scale.top4 });

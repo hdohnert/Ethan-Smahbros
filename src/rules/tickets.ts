@@ -4,9 +4,9 @@
 
 import type { Derived, Series, TicketAward, TicketScale } from './types';
 
-/** Night of 20 kids against 1,000 physical tickets: about 585 from the tournament. */
+/** Night of 27 kids, 1-stock 4-player matches, 1,000 physical tickets: about 680 from the tournament. */
 export const DEFAULT_TICKETS: TicketScale = {
-  play: 5,
+  play: 3,
   win: 5,
   streak3: 5,
   streak5: 10,
@@ -17,7 +17,7 @@ export const DEFAULT_TICKETS: TicketScale = {
 };
 
 /** Bumped when DEFAULT_TICKETS changes, so Control rewrites saved amounts once. */
-export const TICKET_SCALE_VERSION = 2;
+export const TICKET_SCALE_VERSION = 3;
 
 export const REST_STREAK = 5;
 

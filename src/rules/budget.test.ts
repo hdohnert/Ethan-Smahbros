@@ -23,11 +23,11 @@ const base = (over: Partial<BudgetInput> = {}): BudgetInput => ({
 });
 
 describe('projectBudget', () => {
-  it('at the start of a 75-minute 4-player session projects about the brief’s 585–700', () => {
+  it('at the start of a 75-minute 1-stock 4-player session projects about 600 for the tournament', () => {
     const p = projectBudget(base());
-    // 17 matches × 25 + Top 4 60 + final 30 + champion 25 + 5 games × 15
-    expect(p.remainingMatches).toBe(17);
-    expect(p.expectedMore).toBe(17 * 25 + 60 + 30 + 25 + 5 * 15);
+    // 25 three-minute matches × (4 × 3 + 5) + Top 4 60 + final 30 + champion 25 + 5 games × (2 × 3 + 5)
+    expect(p.remainingMatches).toBe(25);
+    expect(p.expectedMore).toBe(25 * 17 + 60 + 30 + 25 + 5 * 11);
     expect(p.level).toBe('ok');
   });
 
@@ -42,7 +42,7 @@ describe('projectBudget', () => {
     expect(projectBudget(base({ issued: 950, d: replay(null, players, []) })).level).not.toBe('ok');
     const p = projectBudget(base({ issued: 500 }));
     expect(p.level).toBe('over');
-    expect(p.suggestion).toMatch(/Lower "Play a match" from 5 to \d/);
+    expect(p.suggestion).toMatch(/Lower "Play a match" from 3 to \d/);
   });
 
   it('in the playoff only counts what is still unpaid', () => {
@@ -51,14 +51,14 @@ describe('projectBudget', () => {
     const events = [ev(1, { kind: 'bracket', payload: { seeds } }), ev(2, { phase: 'semi1', winner_id: 'Kid0', loser_id: 'Kid3', payload: { bestOf: 1 } })];
     const d = replay(T, players, events, { defaultFormat: '4-player', semiBestOf: 1, finalBestOf: 3 });
     const p = projectBudget(base({ d }));
-    // semi2 not won: final bonus 15; champion 25; games: semi2 1 + final 3 = 4 × 15
-    expect(p.expectedMore).toBe(15 + 25 + 4 * 15);
+    // semi2 not won: final bonus 15; champion 25; games: semi2 1 + final 3 = 4 × 11
+    expect(p.expectedMore).toBe(15 + 25 + 4 * 11);
   });
 });
 
 describe('match pace', () => {
   it('ignores a burst of quick test results', () => {
     const p = projectBudget(base({ now: 60000, kothMatchTimes: [10000, 20000, 30000] }));
-    expect(p.remainingMatches).toBe(17);
+    expect(p.remainingMatches).toBe(25);
   });
 });

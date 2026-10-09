@@ -95,7 +95,7 @@ export function activeRuleKeys(status: string | undefined, format: string | unde
 }
 
 export const DEFAULT_SMASH_RULES: SmashRule[] = [
-  { key: 'koth4', mode: '4-player King of the Hill', settings: '2 stocks, 3-minute time limit' },
+  { key: 'koth4', mode: '4-player King of the Hill', settings: '1 stock, 3-minute time limit' },
   { key: 'koth1', mode: '1v1 King of the Hill', settings: '1 stock, 3-minute time limit' },
   { key: 'playoff', mode: 'Playoffs', settings: '2 stocks, 5-minute time limit, stage hazards off, Battlefield' },
   { key: 'items', mode: 'Items and Final Smash', settings: "Kids' choice for regular play; off for playoffs" },

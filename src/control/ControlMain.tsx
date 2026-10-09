@@ -39,18 +39,25 @@ export function ControlMain({ email }: { email: string }) {
     }
   }, [snap, live]);
 
-  // One-time update of saved ticket amounts and prize list to the current defaults.
+  // One-time update of saved ticket amounts, prize list and Smash rules to the current defaults.
   const migrating = useRef(false);
   useEffect(() => {
     const s = snap?.settings;
-    const oldTickets = s && (s.ticketsVersion ?? 1) < TICKET_SCALE_VERSION;
+    const ticketsVersion = s?.ticketsVersion ?? 1;
+    const oldTickets = s && ticketsVersion < TICKET_SCALE_VERSION;
     const oldPrizes = s && (s.prizesVersion ?? 1) < PRIZES_VERSION;
-    if (snap && (oldTickets || oldPrizes) && !migrating.current) {
+    // Version 3 only moved "Played a match" from 5 to 3 (1-stock matches): keep any other custom amounts.
+    const tickets = s && (ticketsVersion < 2 ? DEFAULT_TICKETS : { ...s.tickets, play: s.tickets.play === 5 ? DEFAULT_TICKETS.play : s.tickets.play });
+    const oldRules = s?.smashRules.some((r) => r.key === 'koth4' && r.settings === '2 stocks, 3-minute time limit');
+    if (snap && (oldTickets || oldPrizes || oldRules) && !migrating.current) {
       migrating.current = true;
       void saveSettings(snap, {
-        ...(oldTickets ? { tickets: DEFAULT_TICKETS, ticketsVersion: TICKET_SCALE_VERSION } : {}),
+        ...(oldTickets ? { tickets: tickets!, ticketsVersion: TICKET_SCALE_VERSION } : {}),
         // New price list; price board mode keeps the in-app store closed.
         ...(oldPrizes ? { prizes: DEFAULT_PRIZES, prizesVersion: PRIZES_VERSION, prizeStoreMode: 'board' as const, prizeStoreOpen: false } : {}),
+        ...(oldRules
+          ? { smashRules: s!.smashRules.map((r) => (r.key === 'koth4' && r.settings === '2 stocks, 3-minute time limit' ? { ...r, settings: '1 stock, 3-minute time limit' } : r)) }
+          : {}),
       })
         .then(() => live.refresh())
         .catch(() => (migrating.current = false));
