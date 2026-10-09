@@ -1446,19 +1446,21 @@
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
-  gap: 2.4vw;
-  align-items: center;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  gap: 2vw;
+  align-items: stretch;
+  align-content: center;
   padding: 2vh 0;
 }
 
 .prizes__tag {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1vh;
-  height: 80%;
+  /* Same height for every tag; the name takes the spare room so prices line up. */
+  display: grid;
+  grid-template-rows: 1fr auto auto;
+  justify-items: center;
+  gap: 1.2vh;
+  min-width: 0;
+  padding: 4vh 1.2vw 3.5vh;
   border-radius: 3vh;
   border: 0.6vh solid var(--neon);
   background: var(--c-panel);
@@ -1468,16 +1470,25 @@
   animation: tag-glow 2.4s ease-in-out infinite alternate;
 }
 
+/* Sizes shrink with the number of tags in a row, so 5 or 6 still fit on one line. */
 .prizes__name {
   font-family: var(--f-fun);
-  font-size: 6vh;
-  letter-spacing: 0.03em;
+  font-size: min(5.4vh, calc(15vw / var(--cols)));
+  line-height: 1.1;
+  letter-spacing: 0.02em;
   text-align: center;
+  max-width: 100%;
+  /* Two lines tall either way, so the prices line up across tags. */
+  min-height: 2.2em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-wrap: break-word;
 }
 
 .prizes__cost {
   font-family: var(--f-display);
-  font-size: 18vh;
+  font-size: min(17vh, calc(44vw / var(--cols)));
   line-height: 1;
   color: var(--neon);
   text-shadow: 0 0 4vh var(--neon);
@@ -1485,7 +1496,7 @@
 
 .prizes__unit {
   font-family: var(--f-display);
-  font-size: 3.4vh;
+  font-size: min(3.2vh, calc(11vw / var(--cols)));
   color: var(--c-textDim);
 }
 
