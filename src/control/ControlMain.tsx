@@ -68,7 +68,8 @@ export function ControlMain({ email }: { email: string }) {
           : {}),
       })
         .then(() => live.refresh())
-        .catch(() => (migrating.current = false));
+        // Allow the next update in this same session (each runs once: its condition is false after saving).
+        .finally(() => (migrating.current = false));
     }
   }, [snap, live]);
 

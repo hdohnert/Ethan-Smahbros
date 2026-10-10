@@ -149,6 +149,20 @@ export const TRIVIA_VERSION = 2;
 /** First question id added in each version (older ids are never re-added, so deleted ones stay deleted). */
 export const TRIVIA_ADDED_FROM: Record<number, number> = { 2: 49 };
 
+/**
+ * A saved list from before version 2 (none of the new default ids yet) gets
+ * the new defaults added, so helper phones and the Trivia TV see them even
+ * before Control has saved the updated list. A list that already has any of
+ * them is used as is, so questions someone deleted stay deleted.
+ */
+export function withNewTrivia(list: TriviaQ[] | null | undefined): TriviaQ[] {
+  if (!list?.length) return DEFAULT_TRIVIA;
+  const from = TRIVIA_ADDED_FROM[2];
+  const isNew = (id: string) => /^t\d+$/.test(id) && Number(id.slice(1)) >= from;
+  if (list.some((x) => isNew(x.id))) return list;
+  return [...list, ...DEFAULT_TRIVIA.filter((x) => isNew(x.id))];
+}
+
 /** Trivia awards are station tickets with this game name (the TV counts them). */
 export const TRIVIA_GAME = 'Trivia';
 

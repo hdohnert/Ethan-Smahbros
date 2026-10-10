@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
-import { DEFAULT_TRIVIA, TRIVIA_STALE_MS } from '../data/trivia';
+import { TRIVIA_STALE_MS, withNewTrivia } from '../data/trivia';
 import { burst } from '../effects/confetti';
 import { Avatar } from '../ui/Avatar';
 import type { BoardModel } from './model';
@@ -16,7 +16,7 @@ export function TriviaScreen({ m, reduced }: { m: BoardModel; reduced: boolean }
     const t = window.setInterval(() => setNow(Date.now()), 5000);
     return () => window.clearInterval(t);
   }, []);
-  const questions = m.settings.trivia?.length ? m.settings.trivia : DEFAULT_TRIVIA;
+  const questions = withNewTrivia(m.settings.trivia);
   const live = m.triviaLive;
   const q = live && now - Date.parse(live.at) < TRIVIA_STALE_MS ? questions.find((x) => x.id === live.qid) : undefined;
   const winner = live?.winner ? m.roster.find((p) => p.id === live.winner) : undefined;

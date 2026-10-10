@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { DEFAULT_TRIVIA, TRIVIA_GAME, type TriviaLive, type TriviaQ } from '../data/trivia';
+import { TRIVIA_GAME, withNewTrivia, type TriviaLive, type TriviaQ } from '../data/trivia';
 import { Avatar } from '../ui/Avatar';
 import { Confirm } from '../ui/Confirm';
 import { deviceId, store } from '../ui/device';
@@ -60,7 +60,7 @@ function shuffle<T>(xs: T[]): T[] {
  */
 export function TriviaStation({ st }: { st: Station }) {
   const roster = st.roster!;
-  const questions = useMemo(() => (roster.trivia?.length ? roster.trivia : DEFAULT_TRIVIA), [roster.trivia]);
+  const questions = useMemo(() => withNewTrivia(roster.trivia), [roster.trivia]);
   const amount = [1, 2, 3, 5].includes(roster.trivia_tickets ?? 0) ? roster.trivia_tickets! : 2;
   const deck = useDeck(questions);
   const q = deck.current;
