@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
-import { TRIVIA_STALE_MS, withNewTrivia } from '../data/trivia';
+import { DEFAULT_TRIVIA, TRIVIA_STALE_MS, withNewTrivia } from '../data/trivia';
 import { burst } from '../effects/confetti';
 import { Avatar } from '../ui/Avatar';
 import type { BoardModel } from './model';
@@ -23,7 +23,17 @@ export function TriviaScreen({ m, reduced }: { m: BoardModel; reduced: boolean }
   }, []);
   const questions = withNewTrivia(m.settings.trivia);
   const live = m.triviaLive;
-  const q = live && now - Date.parse(live.at) < TRIVIA_STALE_MS ? questions.find((x) => x.id === live.qid) : undefined;
+  // Look in the saved list first, then the built-in questions, so a helper phone with a newer list still shows up here.
+  // Time it from when this TV first got the step, so a TV clock that's off doesn't hide questions.
+  const [seen, setSeen] = useState<{ at: string; local: number } | null>(null);
+  useEffect(() => {
+    if (live?.at && live.at !== seen?.at) setSeen({ at: live.at, local: Date.now() });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [live?.at]);
+  // (An hour by the server's clock still drops a question a helper left up long ago.)
+  const fresh =
+    !!live && now - (seen?.at === live.at ? seen.local : Date.now()) < TRIVIA_STALE_MS && now - Date.parse(live.at) < 60 * 60_000;
+  const q = fresh ? (questions.find((x) => x.id === live.qid) ?? DEFAULT_TRIVIA.find((x) => x.id === live.qid)) : undefined;
   const winner = live?.winner ? m.roster.find((p) => p.id === live.winner) : undefined;
 
   // Quiet for a few minutes (no question up, no right answer tapped): photo slideshow,
