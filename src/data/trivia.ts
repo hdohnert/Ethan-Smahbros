@@ -17,7 +17,18 @@ export interface TriviaLive {
   at: string;
 }
 
-export const TRIVIA_CATEGORIES = ['🎂 About Ethan', '🎮 Nintendo & Smash', '⚡ Pokémon', '🐾 Animals', '🚀 Science & Space', '➕ Math', '🌎 World', '🎉 Fun Stuff'];
+export const TRIVIA_CATEGORIES = [
+  '🎂 About Ethan',
+  '🎮 Nintendo & Smash',
+  '⚡ Pokémon',
+  '🐾 Animals',
+  '🚀 Science & Space',
+  '➕ Math',
+  '🌎 World',
+  '⚽ Sports',
+  '🎬 Movies & Shows',
+  '🎉 Fun Stuff',
+];
 
 const q = (id: number, cat: string, question: string, a: string): TriviaQ => ({ id: `t${id}`, cat, q: question, a });
 
@@ -70,7 +81,73 @@ export const DEFAULT_TRIVIA: TriviaQ[] = [
   q(46, '🎂 About Ethan', "What was the name of Ethan's nursery school?", 'Weekday Nursery School'),
   q(47, '🎂 About Ethan', 'How old will Ethan be in 2036?', '19'),
   q(48, '🎂 About Ethan', "Who is Ethan's best friend?", 'All of you!'),
+  // Added in version 2 (Control appends these to a saved list once).
+  q(49, '🎮 Nintendo & Smash', "What color is Luigi's hat?", 'Green'),
+  q(50, '🎮 Nintendo & Smash', 'What is the name of the princess in The Legend of Zelda games?', 'Zelda'),
+  q(51, '🎮 Nintendo & Smash', 'What happens to Mario when he eats a Super Mushroom?', 'He grows bigger'),
+  q(52, '🎮 Nintendo & Smash', "What is the name of the little mushroom-headed helper in Peach's castle?", 'Toad'),
+  q(53, '🎮 Nintendo & Smash', "What is the name of Bowser's son?", 'Bowser Jr.'),
+  q(54, '🎮 Nintendo & Smash', 'In Smash Bros, what do you break to get a Final Smash?', 'The Smash Ball'),
+  q(55, '🎮 Nintendo & Smash', 'Which greedy Mario rival wears yellow and purple?', 'Wario'),
+  q(56, '🎮 Nintendo & Smash', 'What game console are we playing Smash Bros on today?', 'Nintendo Switch'),
+  q(57, '🎮 Nintendo & Smash', 'What color is Sonic the Hedgehog?', 'Blue'),
+  q(58, '🎮 Nintendo & Smash', 'Which Smash fighter is a space bounty hunter in an orange power suit?', 'Samus'),
+  q(59, '⚡ Pokémon', 'What type is Bulbasaur?', 'Grass (and Poison)'),
+  q(60, '⚡ Pokémon', "What is Ash's last name?", 'Ketchum'),
+  q(61, '⚡ Pokémon', 'What does Charmander evolve into?', 'Charmeleon'),
+  q(62, '⚡ Pokémon', 'What is the final evolution of Squirtle?', 'Blastoise'),
+  q(63, '⚡ Pokémon', 'Which pink Pokémon sings a song that puts everyone to sleep?', 'Jigglypuff'),
+  q(64, '⚡ Pokémon', 'What do trainers throw to catch Pokémon?', 'A Poké Ball'),
+  q(65, '⚡ Pokémon', 'What type is Gengar?', 'Ghost (and Poison)'),
+  q(66, '⚡ Pokémon', 'Which powerful Psychic Pokémon was created in a lab from Mew?', 'Mewtwo'),
+  q(67, '🐾 Animals', 'What is the tallest animal in the world?', 'Giraffe'),
+  q(68, '🐾 Animals', 'What does a caterpillar turn into?', 'A butterfly (or a moth)'),
+  q(69, '🐾 Animals', 'How many legs does an insect have?', '6'),
+  q(70, '🐾 Animals', 'What is a group of lions called?', 'A pride'),
+  q(71, '🐾 Animals', 'What is the only mammal that can really fly?', 'A bat'),
+  q(72, '🐾 Animals', 'What do pandas mostly eat?', 'Bamboo'),
+  q(73, '🐾 Animals', 'What is a baby frog called?', 'A tadpole'),
+  q(74, '🐾 Animals', 'Do sharks have bones?', 'No, their skeletons are made of cartilage'),
+  q(75, '🚀 Science & Space', 'What is the biggest planet in our solar system?', 'Jupiter'),
+  q(76, '🚀 Science & Space', 'What is the closest star to Earth?', 'The Sun'),
+  q(77, '🚀 Science & Space', 'What is the hottest planet in our solar system?', 'Venus'),
+  q(78, '🚀 Science & Space', 'About how many days does it take Earth to go around the Sun?', '365 (one year)'),
+  q(79, '🚀 Science & Space', 'What force pulls everything down to the ground?', 'Gravity'),
+  q(80, '🚀 Science & Space', 'What are the three states of matter?', 'Solid, liquid and gas'),
+  q(81, '🚀 Science & Space', 'What do you call a scientist who studies dinosaur fossils?', 'A paleontologist'),
+  q(82, '🚀 Science & Space', 'What do plants need from the Sun to make their food?', 'Sunlight'),
+  q(83, '➕ Math', 'What is 9 × 9?', '81'),
+  q(84, '➕ Math', 'How many sides does an octagon have?', '8'),
+  q(85, '➕ Math', 'What is 100 − 37?', '63'),
+  q(86, '➕ Math', 'How many days are in a leap year?', '366'),
+  q(87, '➕ Math', 'What is 6 × 7?', '42'),
+  q(88, '➕ Math', 'How many cents are in a quarter?', '25'),
+  q(89, '➕ Math', 'What is double 45?', '90'),
+  q(90, '🌎 World', 'What is the biggest country in the world?', 'Russia'),
+  q(91, '🌎 World', 'What is the longest river in the world?', 'The Nile (some say the Amazon)'),
+  q(92, '🌎 World', 'What is the capital of the United States?', 'Washington, D.C.'),
+  q(93, '🌎 World', 'On which continent do kangaroos live in the wild?', 'Australia'),
+  q(94, '🌎 World', 'What is the coldest continent?', 'Antarctica'),
+  q(95, '🌎 World', 'How many states are in the United States?', '50'),
+  q(96, '⚽ Sports', 'How many players does one soccer team have on the field?', '11'),
+  q(97, '⚽ Sports', 'In basketball, how many points is a shot from behind the 3-point line?', '3'),
+  q(98, '⚽ Sports', 'In which sport do you score a touchdown?', 'Football'),
+  q(99, '⚽ Sports', 'How many holes are on a regular golf course?', '18'),
+  q(100, '⚽ Sports', 'In baseball, how many strikes make an out?', '3'),
+  q(101, '🎬 Movies & Shows', 'What is the name of the cowboy toy in Toy Story?', 'Woody'),
+  q(102, '🎬 Movies & Shows', 'What kind of fish is Nemo?', 'A clownfish'),
+  q(103, '🎬 Movies & Shows', 'Who lives in a pineapple under the sea?', 'SpongeBob SquarePants'),
+  q(104, '🎬 Movies & Shows', 'Which Frozen sister has ice powers?', 'Elsa'),
+  q(105, '🎬 Movies & Shows', 'How many Teenage Mutant Ninja Turtles are there?', '4'),
+  q(106, '🎉 Fun Stuff', 'In Minecraft, what is the weakest pickaxe that can mine diamonds?', 'An iron pickaxe'),
+  q(107, '🎉 Fun Stuff', 'What color do you get when you mix blue and yellow?', 'Green'),
+  q(108, '🎉 Fun Stuff', 'What fruit do the Minions love most?', 'Bananas'),
 ];
+
+/** Bumped when DEFAULT_TRIVIA gains questions; Control adds the new ones to a saved list once. */
+export const TRIVIA_VERSION = 2;
+/** First question id added in each version (older ids are never re-added, so deleted ones stay deleted). */
+export const TRIVIA_ADDED_FROM: Record<number, number> = { 2: 49 };
 
 /** Trivia awards are station tickets with this game name (the TV counts them). */
 export const TRIVIA_GAME = 'Trivia';

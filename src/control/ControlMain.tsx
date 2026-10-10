@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { newTournament, refreshPhotoLinks, saveSettings, undoLast, demoStep } from '../data/api';
 import { DEFAULT_TICKETS, TICKET_SCALE_VERSION } from '../rules/tickets';
 import { DEFAULT_PRIZES, PRIZES_VERSION } from '../data/types';
+import { DEFAULT_TRIVIA, TRIVIA_ADDED_FROM, TRIVIA_VERSION } from '../data/trivia';
 import { useSnapshot } from '../data/useSnapshot';
 import type { Snapshot } from '../data/types';
 import { useAction } from '../ui/Toast';
@@ -49,12 +50,19 @@ export function ControlMain({ email }: { email: string }) {
     // Version 3 only moved "Played a match" from 5 to 3 (1-stock matches): keep any other custom amounts.
     const tickets = s && (ticketsVersion < 2 ? DEFAULT_TICKETS : { ...s.tickets, play: s.tickets.play === 5 ? DEFAULT_TICKETS.play : s.tickets.play });
     const oldRules = s?.smashRules.some((r) => r.key === 'koth4' && r.settings === '2 stocks, 3-minute time limit');
-    if (snap && (oldTickets || oldPrizes || oldRules) && !migrating.current) {
+    // Trivia: add questions from newer defaults to the saved list (only ones it has never had).
+    const triviaFrom = TRIVIA_ADDED_FROM[(s?.triviaVersion ?? 1) + 1];
+    const have = new Set(s?.trivia.map((x) => x.id));
+    const newTrivia = s && (s.triviaVersion ?? 1) < TRIVIA_VERSION
+      ? DEFAULT_TRIVIA.filter((x) => Number(x.id.slice(1)) >= (triviaFrom ?? Infinity) && !have.has(x.id))
+      : null;
+    if (snap && (oldTickets || oldPrizes || oldRules || newTrivia) && !migrating.current) {
       migrating.current = true;
       void saveSettings(snap, {
         ...(oldTickets ? { tickets: tickets!, ticketsVersion: TICKET_SCALE_VERSION } : {}),
         // New price list; price board mode keeps the in-app store closed.
         ...(oldPrizes ? { prizes: DEFAULT_PRIZES, prizesVersion: PRIZES_VERSION, prizeStoreMode: 'board' as const, prizeStoreOpen: false } : {}),
+        ...(newTrivia ? { trivia: [...s!.trivia, ...newTrivia], triviaVersion: TRIVIA_VERSION } : {}),
         ...(oldRules
           ? { smashRules: s!.smashRules.map((r) => (r.key === 'koth4' && r.settings === '2 stocks, 3-minute time limit' ? { ...r, settings: '1 stock, 3-minute time limit' } : r)) }
           : {}),

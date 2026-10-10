@@ -155,6 +155,8 @@ export interface Settings {
   /** Trivia questions (editable) and tickets for a right answer (1, 2, 3 or 5). */
   trivia: TriviaQ[];
   triviaTickets: number;
+  /** Which DEFAULT_TRIVIA version the saved list includes (absent = the first 48). */
+  triviaVersion?: number;
   /** What to set on the Switch for each part of the night (editable). */
   smashRules: SmashRule[];
   prizes: Prize[];
