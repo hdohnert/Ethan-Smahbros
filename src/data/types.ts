@@ -155,6 +155,8 @@ export interface Settings {
   /** Trivia questions (editable) and tickets for a right answer (1, 2, 3 or 5). */
   trivia: TriviaQ[];
   triviaTickets: number;
+  /** Trivia TV: minutes with no question before it starts the photo slideshow (0 = off). */
+  triviaSlideshowMinutes: number;
   /** Which DEFAULT_TRIVIA version the saved list includes (absent = the first 48). */
   triviaVersion?: number;
   /** What to set on the Switch for each part of the night (editable). */
@@ -212,6 +214,7 @@ export const DEFAULT_SETTINGS: Settings = {
   photoEveryMinutes: 3,
   trivia: DEFAULT_TRIVIA,
   triviaTickets: 2,
+  triviaSlideshowMinutes: 3,
   prizes: DEFAULT_PRIZES,
   sound: false,
   demoReturnTo: null,

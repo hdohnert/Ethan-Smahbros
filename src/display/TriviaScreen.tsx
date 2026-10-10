@@ -4,6 +4,11 @@ import { TRIVIA_STALE_MS, withNewTrivia } from '../data/trivia';
 import { burst } from '../effects/confetti';
 import { Avatar } from '../ui/Avatar';
 import type { BoardModel } from './model';
+import { PHOTO_MS, PhotoScreen } from './PhotoScreen';
+
+/** Idle slideshow: 4 photos, then the leaderboard for 10 s, then again. */
+const SLIDE_PHOTOS_MS = 4 * PHOTO_MS;
+const SLIDE_CYCLE_MS = SLIDE_PHOTOS_MS + 10_000;
 
 /**
  * The second TV. While a Trivia station has a question up: the question,
@@ -13,13 +18,23 @@ import type { BoardModel } from './model';
 export function TriviaScreen({ m, reduced }: { m: BoardModel; reduced: boolean }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const t = window.setInterval(() => setNow(Date.now()), 5000);
+    const t = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(t);
   }, []);
   const questions = withNewTrivia(m.settings.trivia);
   const live = m.triviaLive;
   const q = live && now - Date.parse(live.at) < TRIVIA_STALE_MS ? questions.find((x) => x.id === live.qid) : undefined;
   const winner = live?.winner ? m.roster.find((p) => p.id === live.winner) : undefined;
+
+  // Quiet for a few minutes (no question up, no right answer tapped): photo slideshow,
+  // with the leaderboard back for a moment after every few photos.
+  const answered = Object.values(m.triviaCounts).reduce((a, b) => a + b, 0);
+  const activity = `${live?.qid}|${live?.phase}|${live?.winner}|${live?.at}|${answered}`;
+  const [lastActivity, setLastActivity] = useState(() => Date.now());
+  useEffect(() => setLastActivity(Date.now()), [activity]);
+  const idleMs = m.settings.triviaSlideshowMinutes * 60_000;
+  const quietFor = now - lastActivity - idleMs;
+  const slideshow = !q && idleMs > 0 && m.settings.photos.length > 0 && quietFor >= 0 && quietFor % SLIDE_CYCLE_MS < SLIDE_PHOTOS_MS;
 
   // Confetti once per winner.
   const cheered = useRef<string | null>(null);
@@ -30,6 +45,8 @@ export function TriviaScreen({ m, reduced }: { m: BoardModel; reduced: boolean }
   }, [live?.phase, live?.qid, live?.winner]);
 
   const fade = reduced ? { initial: { opacity: 0 }, animate: { opacity: 1 } } : { initial: { opacity: 0, y: 30 }, animate: { opacity: 1, y: 0 } };
+
+  if (slideshow) return <PhotoScreen m={m} />;
 
   return (
     <div className="trivia safe">

@@ -39,6 +39,23 @@ export function TriviaCard({ live }: { live: Live }) {
         </div>
       </div>
 
+      <div className="field">
+        <span>Trivia TV photo slideshow when idle</span>
+        <div className="seg">
+          {[0, 2, 3, 5].map((n) => (
+            <button
+              key={n}
+              className={`seg__btn${s.triviaSlideshowMinutes === n ? ' seg__btn--on' : ''}`}
+              disabled={busy}
+              onClick={() => s.triviaSlideshowMinutes !== n && run(() => saveSettings(snap, { triviaSlideshowMinutes: n }).then(live.refresh), 'Saved')}
+            >
+              {n ? `After ${n} min` : 'Off'}
+            </button>
+          ))}
+        </div>
+        <p className="muted small">Uses the photos from Photos on the TV. A question from a helper interrupts it right away.</p>
+      </div>
+
       <button className="btn" onClick={() => setOpen(!open)} aria-expanded={open}>
         {open ? 'Hide questions' : `Edit questions (${s.trivia.length})`}
       </button>
