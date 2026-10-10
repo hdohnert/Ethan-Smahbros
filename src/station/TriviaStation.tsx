@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { DEFAULT_TRIVIA, TRIVIA_GAME, type TriviaLive, type TriviaQ } from '../data/trivia';
 import { Avatar } from '../ui/Avatar';
+import { Confirm } from '../ui/Confirm';
 import { deviceId, store } from '../ui/device';
 import { useAction, useToast } from '../ui/Toast';
 import { stationCall, type RosterPlayer, type useStation } from './stationApi';
@@ -68,6 +69,7 @@ export function TriviaStation({ st }: { st: Station }) {
   const [onTv, setOnTv] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const [winner, setWinner] = useState<RosterPlayer | null>(null);
+  const [askReset, setAskReset] = useState(false);
 
   const live = (l: Omit<TriviaLive, 'at'> | null) => stationCall('station_trivia', { p_pin: st.pin, p_live: l }).catch((e) => toast(String(e.message ?? e), 'error'));
 
@@ -187,6 +189,31 @@ export function TriviaStation({ st }: { st: Station }) {
         {winner ? 'Next question →' : 'Nobody got it · next question →'}
       </button>
       {onTv && <p className="muted small">After this, the next question stays on your phone until you tap 📺 Show on TV again.</p>}
+      <button className="btn btn--ghost" disabled={busy} onClick={() => setAskReset(true)}>
+        ↺ Start trivia over
+      </button>
+      {askReset && (
+        <Confirm
+          title="Start trivia over?"
+          confirmLabel="Start over"
+          onCancel={() => setAskReset(false)}
+          onConfirm={() => {
+            setAskReset(false);
+            setWinner(null);
+            setRevealed(false);
+            if (onTv) {
+              setOnTv(false);
+              void live(null);
+            }
+            deck.restart();
+            toast('Trivia starts over with a new shuffle');
+          }}
+        >
+          <p className="small">
+            All {deck.total} questions come back on this phone in a new order. Tickets already given stay, and so does the trivia leaderboard.
+          </p>
+        </Confirm>
+      )}
     </div>
   );
 }
