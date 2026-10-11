@@ -217,6 +217,13 @@ function UpNext({ live }: { live: Live }) {
           groupSize={group}
           onReorder={(order) => save([...playing, ...order, ...waiting.slice(shown.length)], 'reorder')}
           onSkip={(id) => save([...d.queue.filter((x) => x !== id), id], 'skip')}
+          onUp={(id) => {
+            const i = waiting.indexOf(id);
+            if (i <= 0) return;
+            const next = [...waiting];
+            [next[i - 1], next[i]] = [next[i], next[i - 1]];
+            void save([...playing, ...next], 'reorder');
+          }}
         />
       )}
       {waiting.length > SHOW && (
@@ -224,7 +231,7 @@ function UpNext({ live }: { live: Live }) {
           {all ? 'Show fewer' : `Show all ${waiting.length}`}
         </button>
       )}
-      <p className="muted small">Skip sends a kid to the back. Kids who leave: switch them off on the Players tab.</p>
+      <p className="muted small">⬆ moves a kid up one spot (or drag ☰). Skip sends a kid to the back. Kids who leave: switch them off on the Players tab.</p>
     </section>
   );
 }
@@ -234,6 +241,7 @@ function QueueList({
   get,
   onReorder,
   onSkip,
+  onUp,
   firstLabel,
   groupSize = 1,
 }: {
@@ -241,6 +249,7 @@ function QueueList({
   get: (id: string) => Player | undefined;
   onReorder: (order: string[]) => void;
   onSkip?: (id: string) => void;
+  onUp?: (id: string) => void;
   firstLabel?: string;
   /** Show rows in blocks of this size (one block per upcoming match). */
   groupSize?: number;
@@ -268,6 +277,7 @@ function QueueList({
             if (order.join() !== ids.join()) onReorder(order);
           }}
           onSkip={onSkip ? () => onSkip(id) : undefined}
+          onUp={onUp && i > 0 ? () => onUp(id) : undefined}
         />
       ))}
     </Reorder.Group>
@@ -283,6 +293,7 @@ function QueueRow(props: {
   onDragStart: () => void;
   onDragEnd: () => void;
   onSkip?: () => void;
+  onUp?: () => void;
 }) {
   const controls = useDragControls();
   const g = props.group;
@@ -304,6 +315,11 @@ function QueueRow(props: {
       {props.player && <Avatar player={props.player} />}
       <span className="queue__name">{props.player?.name ?? '?'}</span>
       {props.firstLabel && <span className="pill">{props.firstLabel}</span>}
+      {props.onUp && (
+        <button className="btn btn--small" onClick={props.onUp} aria-label="Move up one spot">
+          ⬆
+        </button>
+      )}
       {props.onSkip && (
         <button className="btn btn--small" onClick={props.onSkip}>
           Skip

@@ -380,3 +380,18 @@ describe('undo', () => {
     expect(replay(T, players, events)).toMatchObject({ king: 'Ethan', challenger: 'Ava', lastEvent: null });
   });
 });
+
+describe('reordering the line', () => {
+  it('can move a kid who joined late and has not played yet', () => {
+    const late: RulesPlayer = { id: 'Zed', name: 'Zed', active: true, sort_order: 9 };
+    const all = [...players, late];
+    const e1 = m('Ethan', 'Ava');
+    const before = replay(T, all, [e1]);
+    expect(before.queue[before.queue.length - 1]).toBe('Zed');
+    const move: RulesEvent = { id: nextId++, kind: 'queue', phase: null, winner_id: null, loser_id: null, payload: { order: ['Zed', ...before.queue.filter((x) => x !== 'Zed')] }, undone: false };
+    const after = replay(T, all, [e1, move]);
+    expect(after.queue[0]).toBe('Zed');
+    // Undo puts the line back exactly.
+    expect(replay(T, all, [e1, { ...move, undone: true }]).queue).toEqual(before.queue);
+  });
+});

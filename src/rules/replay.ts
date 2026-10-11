@@ -112,10 +112,11 @@ export function replay(
     } else if (e.kind === 'queue' && status === 'koth') {
       const qp = e.payload as QueuePayload | null;
       if (qp?.format) format = qp.format;
+      // Any known player except the king can be placed, including kids who joined
+      // after the start and haven't played yet (they aren't in the line until now).
       const order = qp?.order ?? [];
-      const known = new Set(queue);
-      const next = order.filter((id) => known.has(id));
-      const placed = new Set(next);
+      const placed = new Set<string>();
+      const next = order.filter((id) => known.has(id) && id !== king && !placed.has(id) && (placed.add(id), true));
       queue = [...next, ...queue.filter((id) => !placed.has(id))];
     } else if (e.kind === 'bracket' && status === 'koth') {
       const seeds = (e.payload as BracketPayload | null)?.seeds ?? [];
